@@ -305,8 +305,14 @@ MIT License - See [LICENSE](LICENSE) for details.
 
 1. **Learn**: Read [`FRAMEWORK.md`](FRAMEWORK.md) for detailed methodology
 2. **Explore**: Check [`/examples`](/examples) for real skills
-3. **Try**: Use interview templates in [`/tools`](/tools)
+3. **Try**: Use interview templates in [`/templates`](/templates)
 4. **Build**: Extract your own expertise at https://ieataiforbreakfast.com
+5. **Operate**: Deployment, env vars, npm publishing — see [`docs/README.md`](docs/README.md)
+
+## Documentation
+
+- **Methodology & contribution**: [`FRAMEWORK.md`](FRAMEWORK.md), [`GETTING_STARTED.md`](GETTING_STARTED.md), [`CONTRIBUTING.md`](CONTRIBUTING.md)
+- **Reference implementation (hosted product + `@smetp/*`)**: [`docs/README.md`](docs/README.md)
 
 ---
 
