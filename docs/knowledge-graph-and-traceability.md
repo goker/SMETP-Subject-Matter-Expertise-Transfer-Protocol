@@ -1,6 +1,6 @@
 # Knowledge Graph and Traceable Answers
 
-**Status:** draft proposal, SMETP Knowledge Ontology 0.1.0, targeting `@smetp/spec` 0.6.0 (additive).
+**Status:** SMETP Knowledge Ontology 0.1.0 (draft). `@smetp/spec` 0.6.0 carries the claim layer; `@smetp/runtime` 0.5.0 ships the verifier.
 **Author:** Goker Ezberci. **License:** MIT, like the rest of this repository.
 
 SMETP already turns an expert's tacit knowledge into a `SkillDocument` that a runtime can execute. This document adds the layer that makes that knowledge **traceable once it is inside an LLM**: a typed ontology, a claim-level knowledge graph with hashed evidence, a vendor-neutral answer trace, a deterministic verifier, and a viewer that shows the path from any sentence back to the moment an expert said it.
@@ -258,10 +258,10 @@ The original example file uses the same heuristics; it should be reviewed with t
 
 ## 12. Gap analysis against the reference implementation
 
-Concrete changes for the ieataiforbreakfast.com codebase, in priority order:
+Concrete changes for the ieataiforbreakfast.com codebase, in priority order. Items marked done ship in [ieataiforbreakfast.com PR #1](https://github.com/goker/ieataiforbreakfast.com/pull/1).
 
-| # | Where | Today | Change |
-|---|---|---|---|
+| # | Where | Today | Change | Status |
+|---|---|---|---|---|
 | 1 | `lib/twin/ask.ts`, `askLlmConstrained` | Rejects zero-citation answers but accepts any cited id | Run `verifyTrace` on every LLM answer. Reject unknown ids and ungrounded numbers. Return TAL per sentence to the UI. |
 | 2 | `lib/twin/ask.ts`, `matchesRefuseTopic` | Matches only the first word of each refuse topic, so a topic like "credit pricing" refuses every question containing "credit" | Model refuse topics as Exclusion claims about concepts and match on concept seeds. |
 | 3 | `@smetp/spec` `SkillDocument` | `heuristics`, `edge_cases`, `concepts` are `string[]` | Add `claims: ClaimSchema[]` (additive, v0.6). Keep strings for back-compat; the compiler emits both. |
