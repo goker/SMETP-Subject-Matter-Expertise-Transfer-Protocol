@@ -1,0 +1,275 @@
+{
+  "smetp_trace_version": "0.1.0",
+  "id": "trace:8245c8b60bb4",
+  "graph": "kg:finance/credit-risk-assessment",
+  "graph_sha256": "b4d346daac25e435317153d3191559374947bf781ab0c2e9e28ca595389f2319",
+  "question": "An applicant has a 690 FICO, $2,100 monthly debt on $6,000 gross monthly income, 4 years at their job, and 2 hard inquiries in the last 6 months. Would you approve, and what rate should we offer?",
+  "asked_at": "2026-10-16T06:17:57.036Z",
+  "model": {
+    "provider": "anthropic",
+    "name": "claude-sonnet-4-5"
+  },
+  "retrieval": {
+    "seeds": [
+      "k:credit-score",
+      "k:monthly-debt",
+      "k:gross-monthly-income",
+      "k:employment-tenure",
+      "k:hard-inquiry",
+      "k:approval-tier",
+      "k:interest-rate-pricing"
+    ],
+    "hops": 1,
+    "retrieved": [
+      "k:credit-score",
+      "k:monthly-debt",
+      "k:gross-monthly-income",
+      "k:employment-tenure",
+      "k:hard-inquiry",
+      "k:approval-tier",
+      "k:interest-rate-pricing",
+      "k:dti",
+      "k:medical-debt",
+      "k:self-employment-income",
+      "c:prime-approval",
+      "c:standard-score-floor",
+      "c:standard-approval",
+      "c:dti-definition",
+      "c:self-employed-income",
+      "c:employment-min",
+      "c:self-employed-tenure",
+      "c:inquiry-conditional",
+      "c:inquiry-desperation",
+      "c:dti-ceiling",
+      "c:bankruptcy-7yr",
+      "c:excl-pricing",
+      "c:savings-buffer",
+      "reg:reg-z-atr",
+      "reg:fcra-605"
+    ],
+    "context_pack_sha256": "ef397b4da2607578541998d112533a8033daa5eee632b50512c42afd128c2640"
+  },
+  "workflow_runs": [
+    {
+      "workflow": "wf:standard-tier",
+      "status": "completed",
+      "steps": [
+        "s:check-prime",
+        "s:check-floor",
+        "s:compute-dti",
+        "s:check-dti",
+        "s:check-tenure",
+        "s:check-inquiries",
+        "s:emit-conditional"
+      ],
+      "bindings": {
+        "credit_score": 690,
+        "monthly_debt": 2100,
+        "gross_monthly_income": 6000,
+        "employment_years": 4,
+        "recent_inquiries": 2,
+        "dti": 0.35,
+        "decision": "CONDITIONAL",
+        "confidence": 0.75
+      }
+    }
+  ],
+  "answer": {
+    "text": "DTI is 35% ($2,100 / $6,000), under the 43% ceiling for the standard tier. A 690 FICO score clears the 650 standard-tier floor, and 4 years at the job clears the two-year employment minimum. The applicant is employed rather than self-employed, so the three-year self-employment exception does not change the tenure check. Because there are 2 hard inquiries in 6 months, the file is CONDITIONAL at about 75% confidence: ask the applicant to explain the inquiries and offer a smaller amount. Files like this default less than 2% of the time, so the risk is low. I can't recommend an interest rate; pricing is outside this expertise.",
+    "segments": [
+      {
+        "id": "seg-1",
+        "text": "DTI is 35% ($2,100 / $6,000), under the 43% ceiling for the standard tier.",
+        "kind": "computed",
+        "claims": [
+          "c:dti-definition",
+          "c:dti-ceiling"
+        ],
+        "bindings": [
+          "dti"
+        ]
+      },
+      {
+        "id": "seg-2",
+        "text": "A 690 FICO score clears the 650 standard-tier floor, and 4 years at the job clears the two-year employment minimum.",
+        "kind": "entailed",
+        "claims": [
+          "c:standard-score-floor",
+          "c:employment-min"
+        ],
+        "bindings": []
+      },
+      {
+        "id": "seg-3",
+        "text": "The applicant is employed rather than self-employed, so the three-year self-employment exception does not change the tenure check.",
+        "kind": "synthesized",
+        "claims": [
+          "c:self-employed-tenure",
+          "c:employment-min"
+        ],
+        "bindings": []
+      },
+      {
+        "id": "seg-4",
+        "text": "Because there are 2 hard inquiries in 6 months, the file is CONDITIONAL at about 75% confidence: ask the applicant to explain the inquiries and offer a smaller amount.",
+        "kind": "computed",
+        "claims": [
+          "c:inquiry-conditional"
+        ],
+        "bindings": [
+          "decision",
+          "confidence"
+        ]
+      },
+      {
+        "id": "seg-5",
+        "text": "Files like this default less than 2% of the time, so the risk is low.",
+        "kind": "entailed",
+        "claims": [
+          "c:default-rate-band"
+        ],
+        "bindings": []
+      },
+      {
+        "id": "seg-6",
+        "text": "I can't recommend an interest rate; pricing is outside this expertise.",
+        "kind": "refusal",
+        "claims": [
+          "c:excl-pricing"
+        ],
+        "bindings": []
+      }
+    ]
+  },
+  "verification": {
+    "verifier": "smetp-trace@0.1.0",
+    "verified_at": "2026-10-16T06:17:57.039Z",
+    "segments": [
+      {
+        "id": "seg-1",
+        "text": "DTI is 35% ($2,100 / $6,000), under the 43% ceiling for the standard tier.",
+        "kind": "computed",
+        "tal": 3,
+        "claims": [
+          "c:dti-definition",
+          "c:dti-ceiling"
+        ],
+        "evidence": [
+          "sp:j-dti-def",
+          "sp:j-dti-max"
+        ],
+        "experts": [
+          "ex:jane-doe"
+        ],
+        "issues": []
+      },
+      {
+        "id": "seg-2",
+        "text": "A 690 FICO score clears the 650 standard-tier floor, and 4 years at the job clears the two-year employment minimum.",
+        "kind": "entailed",
+        "tal": 4,
+        "claims": [
+          "c:standard-score-floor",
+          "c:employment-min"
+        ],
+        "evidence": [
+          "sp:j-floor",
+          "sp:j-emp"
+        ],
+        "experts": [
+          "ex:jane-doe"
+        ],
+        "issues": []
+      },
+      {
+        "id": "seg-3",
+        "text": "The applicant is employed rather than self-employed, so the three-year self-employment exception does not change the tenure check.",
+        "kind": "synthesized",
+        "tal": 3,
+        "claims": [
+          "c:self-employed-tenure",
+          "c:employment-min"
+        ],
+        "evidence": [
+          "sp:s-tenure",
+          "sp:j-emp"
+        ],
+        "experts": [
+          "ex:sam-rivera",
+          "ex:jane-doe"
+        ],
+        "issues": []
+      },
+      {
+        "id": "seg-4",
+        "text": "Because there are 2 hard inquiries in 6 months, the file is CONDITIONAL at about 75% confidence: ask the applicant to explain the inquiries and offer a smaller amount.",
+        "kind": "computed",
+        "tal": 3,
+        "claims": [
+          "c:inquiry-conditional"
+        ],
+        "evidence": [
+          "sp:j-inq-cond"
+        ],
+        "experts": [
+          "ex:jane-doe"
+        ],
+        "issues": []
+      },
+      {
+        "id": "seg-5",
+        "text": "Files like this default less than 2% of the time, so the risk is low.",
+        "kind": "entailed",
+        "tal": 0,
+        "claims": [
+          "c:default-rate-band"
+        ],
+        "evidence": [],
+        "experts": [],
+        "issues": [
+          {
+            "level": "error",
+            "code": "unknown_claim",
+            "msg": "c:default-rate-band does not exist in kg:finance/credit-risk-assessment"
+          },
+          {
+            "level": "error",
+            "code": "unsupported_number",
+            "msg": "2% is not in the question, the cited claims, or a reported binding"
+          }
+        ]
+      },
+      {
+        "id": "seg-6",
+        "text": "I can't recommend an interest rate; pricing is outside this expertise.",
+        "kind": "refusal",
+        "tal": 3,
+        "claims": [
+          "c:excl-pricing"
+        ],
+        "evidence": [
+          "sp:j-pricing"
+        ],
+        "experts": [
+          "ex:jane-doe"
+        ],
+        "issues": []
+      }
+    ],
+    "metrics": {
+      "segments": 6,
+      "grounded_ratio": 0.8,
+      "mean_tal": 2.6,
+      "min_tal": 0,
+      "citation_validity": 0.8889,
+      "unsupported_numbers": 1,
+      "errors": 2,
+      "warnings": 0
+    },
+    "expert_credit": {
+      "ex:jane-doe": 0.9,
+      "ex:sam-rivera": 0.1
+    },
+    "verdict": "fail"
+  }
+}

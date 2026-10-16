@@ -8,6 +8,7 @@
 | [GETTING_STARTED.md](../GETTING_STARTED.md) | Onboarding |
 | [CONTRIBUTING.md](../CONTRIBUTING.md) | How to contribute |
 | [IMPROVEMENTS.md](../IMPROVEMENTS.md) | Roadmap and improvements |
+| [knowledge-graph-and-traceability.md](./knowledge-graph-and-traceability.md) | Ontology, claim-level knowledge graph, traceable LLM answers (v0.6 draft) |
 
 ## Reference implementation — operations
 

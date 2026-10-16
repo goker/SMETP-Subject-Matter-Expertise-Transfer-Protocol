@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SMETP Trace Viewer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a left-to-right chain of custody. Answer -> Claims -> Knowledge -> Evidence -> Source, with drawn links. */
+:root {
+  --bg: #f5f7f9;
+  --surface: #ffffff;
+  --ink: #17212b;
+  --muted: #5b6876;
+  --line: #d8dfe6;
+  --accent: #1f4e79;
+  --accent-soft: #e3ecf5;
+  --fail: #b3261e;
+  --fail-soft: #fbe9e7;
+  --warn: #9a6200;
+  --warn-soft: #fbf1dc;
+  --t0: #b3261e; --t1: #b86e00; --t2: #6f7f2a; --t3: #2f7d5b; --t4: #1f4e79;
+  --mark: #fff0b3;
+  --f-display: "Newsreader", "Iowan Old Style", Georgia, serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f151b; --surface: #17202a; --ink: #e4eaf0; --muted: #93a1af; --line: #2a3644;
+  --accent: #8ab8e6; --accent-soft: #1c2c3d; --fail: #f2867c; --fail-soft: #3a1c1a; --warn: #e6b45c; --warn-soft: #33270f;
+  --t0: #f2867c; --t1: #e6b45c; --t2: #b9c86a; --t3: #6fcf9f; --t4: #8ab8e6; --mark: #4a3f10; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0f151b; --surface: #17202a; --ink: #e4eaf0; --muted: #93a1af; --line: #2a3644;
+  --accent: #8ab8e6; --accent-soft: #1c2c3d; --fail: #f2867c; --fail-soft: #3a1c1a; --warn: #e6b45c; --warn-soft: #33270f;
+  --t0: #f2867c; --t1: #e6b45c; --t2: #b9c86a; --t3: #6fcf9f; --t4: #8ab8e6; --mark: #4a3f10; color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 14px/1.5 var(--f-body); }
+.wrap { max-width: 1480px; margin: 0 auto; padding-block: 28px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 22px; }
+h1 { font: 600 clamp(26px, 3.4vw, 38px)/1.1 var(--f-display); margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+h2 { font: 600 12px/1.2 var(--f-body); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0; }
+.mono { font-family: var(--f-mono); font-size: 12px; }
+.lede { color: var(--muted); max-width: 70ch; margin: 6px 0 0; }
+
+header.top { display: flex; flex-wrap: wrap; gap: 16px 32px; align-items: end; justify-content: space-between; }
+.question { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; display: grid; gap: 6px; }
+.question p { margin: 0; font: 500 17px/1.45 var(--f-display); max-width: 90ch; }
+.meta { color: var(--muted); }
+
+.stats { display: flex; flex-wrap: wrap; gap: 10px 26px; align-items: baseline; font-variant-numeric: tabular-nums; }
+.stat { display: grid; gap: 2px; }
+.stat b { font: 600 22px/1 var(--f-display); }
+.stat span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.verdict { font: 600 12px/1 var(--f-body); letter-spacing: 0.08em; text-transform: uppercase; padding: 7px 10px; border-radius: 4px; }
+.verdict.fail { background: var(--fail-soft); color: var(--fail); }
+.verdict.pass_with_warnings { background: var(--warn-soft); color: var(--warn); }
+.verdict.pass { background: var(--accent-soft); color: var(--accent); }
+
+.chain { position: relative; display: grid; grid-template-columns: 1.35fr 1.35fr 1fr 1.2fr 0.8fr; gap: 0 44px; align-items: start; }
+.chain svg.links { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+.col { display: grid; gap: 8px; min-width: 0; position: relative; z-index: 1; }
+.col > h2 { padding-bottom: 6px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+.group-label { font-size: 11px; color: var(--muted); margin-top: 10px; text-transform: uppercase; letter-spacing: 0.06em; }
+
+.node { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 9px 11px; cursor: pointer; transition: opacity .15s, border-color .15s, box-shadow .15s; min-width: 0; text-align: left; font: inherit; color: inherit; width: 100%; }
+.node:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.node .id { font: 500 11px/1.3 var(--f-mono); color: var(--muted); overflow-wrap: anywhere; }
+.node .txt { margin-top: 3px; overflow-wrap: anywhere; }
+.node.seg .txt { font: 15px/1.45 var(--f-display); }
+.node.dim { opacity: 0.32; }
+.node.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.node.bad { border-color: var(--fail); background: var(--fail-soft); }
+.node.ghost { border-style: dashed; }
+.node.blocked { background: transparent; border-style: dashed; }
+.row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.pill { font: 500 10.5px/1 var(--f-body); letter-spacing: 0.04em; text-transform: uppercase; padding: 4px 6px; border-radius: 3px; background: var(--accent-soft); color: var(--accent); white-space: nowrap; }
+.pill.st-validated { background: var(--accent-soft); color: var(--t4); }
+.pill.st-sme_confirmed { background: var(--accent-soft); color: var(--t3); }
+.pill.st-extracted { background: var(--warn-soft); color: var(--warn); }
+.pill.st-blocked, .pill.err { background: var(--fail-soft); color: var(--fail); }
+.tal { font: 600 11px/1 var(--f-mono); padding: 4px 6px; border-radius: 3px; color: var(--surface); }
+.tal-0 { background: var(--t0); } .tal-1 { background: var(--t1); } .tal-2 { background: var(--t2); } .tal-3 { background: var(--t3); } .tal-4 { background: var(--t4); }
+.issue { font-size: 12px; color: var(--fail); margin-top: 4px; }
+.issue.w { color: var(--warn); }
+
+.detail { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 18px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 24px; }
+.detail h3 { font: 600 20px/1.25 var(--f-display); margin: 4px 0 8px; text-wrap: balance; }
+.detail dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 14px; margin: 0; }
+.detail dt { color: var(--muted); font-size: 12px; }
+.detail dd { margin: 0; overflow-wrap: anywhere; }
+.note { margin-top: 12px; padding: 10px 12px; border-left: 3px solid var(--warn); background: var(--warn-soft); }
+.note.bad { border-color: var(--fail); background: var(--fail-soft); }
+.transcript { font: 13px/1.6 var(--f-mono); white-space: pre-wrap; overflow-wrap: anywhere; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 12px; max-height: 320px; overflow: auto; margin: 8px 0 0; }
+.transcript mark { background: var(--mark); color: inherit; padding: 1px 0; }
+.hash { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; color: var(--muted); font-size: 12px; align-items: center; }
+.legend .row { gap: 6px; }
+.load { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; font-size: 12px; color: var(--muted); }
+.load label { display: inline-flex; gap: 6px; align-items: center; border: 1px solid var(--line); border-radius: 4px; padding: 6px 10px; background: var(--surface); cursor: pointer; color: var(--ink); }
+.load input { font: inherit; max-width: 200px; }
+#loadMsg { color: var(--fail); }
+
+@media (max-width: 1100px) {
+  .chain { grid-template-columns: 1fr 1fr; gap: 22px; }
+  .chain svg.links { display: none; }
+}
+@media (max-width: 720px) {
+  .chain { grid-template-columns: minmax(0, 1fr); }
+  .detail { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) { .node { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Where did this answer come from?</h1>
+      <p class="lede">Every sentence an LLM says on behalf of an expert is traced to claims in the SMETP knowledge graph, then to hashed transcript spans, then to the expert who said it. Select any box to follow its chain.</p>
+    </div>
+    <div class="stats" id="stats"></div>
+  </header>
+
+  <section class="question" aria-label="Question">
+    <h2>Question</h2>
+    <p id="question"></p>
+    <div class="meta mono" id="meta"></div>
+  </section>
+
+  <div class="legend" aria-label="Legend">
+    <span>Trace Assurance Level</span>
+    <span class="row"><span class="tal tal-0">0</span> unsupported or invalid</span>
+    <span class="row"><span class="tal tal-1">1</span> cites a node, evidence unverified</span>
+    <span class="row"><span class="tal tal-2">2</span> hashed evidence</span>
+    <span class="row"><span class="tal tal-3">3</span> SME-confirmed</span>
+    <span class="row"><span class="tal tal-4">4</span> validated on cases</span>
+  </div>
+
+  <section class="chain" id="chain" aria-label="Trace chain">
+    <svg class="links" id="links" aria-hidden="true"></svg>
+    <div class="col" id="c-answer"><h2>Answer</h2></div>
+    <div class="col" id="c-claims"><h2>Claims cited</h2></div>
+    <div class="col" id="c-know"><h2>Knowledge</h2></div>
+    <div class="col" id="c-evid"><h2>Evidence</h2></div>
+    <div class="col" id="c-src"><h2>Source</h2></div>
+  </section>
+
+  <section class="detail" id="detail" aria-live="polite"></section>
+
+  <div class="load">
+    <span>Inspect your own trace:</span>
+    <label for="fGraph">Graph JSON <input type="file" id="fGraph" accept=".json,application/json"></label>
+    <label for="fTrace">Verified trace JSON <input type="file" id="fTrace" accept=".json,application/json"></label>
+    <span id="loadMsg"></span>
+  </div>
+</div>
+
+<script>
+const EXAMPLE_GRAPH = {"@context":"../../ontology/context.jsonld","smetp_kg_version":"0.1.0","id":"kg:finance/credit-risk-assessment","domain":"finance","title":"Credit Risk Assessment (illustrative)","experts":[{"id":"ex:jane-doe","name":"Jane Doe","role":"Senior Credit Analyst","years_experience":20},{"id":"ex:sam-rivera","name":"Sam Rivera","role":"Underwriting Manager","years_experience":14}],"sessions":[{"id":"ses:jane-2025-01-15","expert":"ex:jane-doe","method":["CDM"],"date":"2025-01-15","duration_min":75},{"id":"ses:sam-2025-02-03","expert":"ex:sam-rivera","method":["ACTA"],"date":"2025-02-03","duration_min":40}],"sources":[{"id":"src:jane-transcript","kind":"transcript","title":"Jane Doe interview transcript","session":"ses:jane-2025-01-15","sha256":"bd2856db4612190b6c203a9cd98398ace621729a5bb556f5245cf71ca136120c","text":"[Illustrative transcript. Fictional SME. Session ses:jane-2025-01-15, Critical Decision Method.]\n\nInterviewer: Walk me through the first thing you look at.\nJane: Score first, always. Anything at 750 or above is prime and I approve it outright; I'm about 98 percent sure on those.\nInterviewer: And below 750?\nJane: 650 is my floor for the standard tier. Under 650 we're in subprime territory and it's a different conversation.\nInterviewer: What comes after score?\nJane: Debt-to-income. I take total monthly debt payments divided by gross monthly income. For standard tier I want DTI at 43 percent or lower.\nInterviewer: Employment?\nJane: Two years in the current job is my minimum for standard.\nJane: Then inquiries. One hard inquiry in six months is normal life. More than one and the file goes conditional, I'd put myself at 75 percent: I ask them to explain the inquiries and I usually offer a smaller amount.\nJane: Three or more hard inquiries in six months and I read it as desperation for credit. I reject unless there's a strong compensating factor.\nJane: If everything clears, score at or above 650, DTI at or under 43, two years on the job, at most one inquiry, it's a standard approval and I'm 92 percent sure.\nInterviewer: Anything that softens a borderline file?\nJane: Savings. Six months of expenses in the bank and I take about ten percent off my risk read. It's their safety net if the job goes.\nJane: Medical debt I only count at half toward DTI. People pay medical bills off; card debt means they overspend.\nJane: Married co-applicants are more stable than couples who are just dating, so I lean on a spouse's income more.\nJane: Young people, say 25 to 35, with income climbing fast, I'll approve even with a lower score.\nInterviewer: Bankruptcy?\nJane: If the discharge was seven or more years ago and the rest of the file is strong, it's approvable. The Fair Credit Reporting Act says bankruptcies drop off after seven years anyway.\nInterviewer: What don't you decide?\nJane: Rates. I never set the interest rate; pricing is a separate desk and I stay out of it.\n","visibility":"public"},{"id":"src:sam-transcript","kind":"transcript","title":"Sam Rivera interview transcript","session":"ses:sam-2025-02-03","sha256":"c6e2dad25bcff9f5d8bc65b41b7ed3a6b65260eab778082d8466fa55fcaded22","text":"[Illustrative transcript. Fictional SME. Session ses:sam-2025-02-03, Applied Cognitive Task Analysis.]\n\nInterviewer: Where do junior underwriters get self-employed applicants wrong?\nSam: They read year-to-date or the 1099s. For self-employed income I use the two-year average from the tax returns, nothing else.\nSam: And the two-year job rule doesn't apply to them as written. I want three years of self-employment history before I treat it like a W-2 job.\n","visibility":"public"}],"spans":[{"id":"sp:j-prime","source":"src:jane-transcript","start":183,"end":279,"sha256":"ed4a1b777cda48502e417e35038575c7876ea33e8652b8e61cf6bb1d7e9796f9","quote":"Anything at 750 or above is prime and I approve it outright; I'm about 98 percent sure on those."},{"id":"sp:j-floor","source":"src:jane-transcript","start":314,"end":390,"sha256":"6ab4cdcf9911d3323a308b35365a7db0c79054b8adab5225cec6df1de0df3e16","quote":"650 is my floor for the standard tier. Under 650 we're in subprime territory"},{"id":"sp:j-dti-def","source":"src:jane-transcript","start":485,"end":552,"sha256":"764d95d0e2b9c64caaaca403ddf8e8993afb8a83ae3d34836348ee1678875b2b","quote":"I take total monthly debt payments divided by gross monthly income."},{"id":"sp:j-dti-max","source":"src:jane-transcript","start":553,"end":605,"sha256":"a0c31d6c824a65f673ddd8d05a66ddb6de7ce6f44bfc7e96c5659ca9ce75e393","quote":"For standard tier I want DTI at 43 percent or lower."},{"id":"sp:j-emp","source":"src:jane-transcript","start":637,"end":693,"sha256":"1169f93dc37143384b190157af9cf68e31d9eb7c0bc13d01da75dd24a4c8c10d","quote":"Two years in the current job is my minimum for standard."},{"id":"sp:j-inq-cond","source":"src:jane-transcript","start":763,"end":911,"sha256":"b448cbbd0631f0f940f3980ad333ec76e246ffb7ec61742f559eeffc807ef411","quote":"More than one and the file goes conditional, I'd put myself at 75 percent: I ask them to explain the inquiries and I usually offer a smaller amount."},{"id":"sp:j-inq-desp","source":"src:jane-transcript","start":918,"end":1055,"sha256":"3221a55260eccb1d638fba678b83504a41c2ae6df336c613038991a600271004","quote":"Three or more hard inquiries in six months and I read it as desperation for credit. I reject unless there's a strong compensating factor."},{"id":"sp:j-std","source":"src:jane-transcript","start":1062,"end":1219,"sha256":"fd3ac31fde84874186b9bf4aa0ccf859f4bfdb8b80f9f7a8129d4fcda1e7d20d","quote":"If everything clears, score at or above 650, DTI at or under 43, two years on the job, at most one inquiry, it's a standard approval and I'm 92 percent sure."},{"id":"sp:j-sav","source":"src:jane-transcript","start":1289,"end":1370,"sha256":"5ba9d646261fe050c6e02903ee5d8a5069071b8530008585f8bc7aad90d9e675","quote":"Six months of expenses in the bank and I take about ten percent off my risk read."},{"id":"sp:j-med","source":"src:jane-transcript","start":1416,"end":1461,"sha256":"648e6a01abf28e2967af261d637fe80e745819404ae22192b840ddcf9da8cc43","quote":"Medical debt I only count at half toward DTI."},{"id":"sp:j-married","source":"src:jane-transcript","start":1530,"end":1638,"sha256":"bd348ad6505601d2edd5a575deb7172c5396a396134c30a6077465a30f81a736","quote":"Married co-applicants are more stable than couples who are just dating, so I lean on a spouse's income more."},{"id":"sp:j-age","source":"src:jane-transcript","start":1645,"end":1737,"sha256":"2b26c88069592cf8062763bc722f37f227092498ed8cb0c56a0d2437477d1cbc","quote":"Young people, say 25 to 35, with income climbing fast, I'll approve even with a lower score."},{"id":"sp:j-bk","source":"src:jane-transcript","start":1769,"end":1866,"sha256":"2902266cc84846ce28569b2055e980f6aefbd4a3a9e7ef531c74038043315e09","quote":"If the discharge was seven or more years ago and the rest of the file is strong, it's approvable."},{"id":"sp:j-bk-why","source":"src:jane-transcript","start":1867,"end":1949,"sha256":"5c8949d03c7e9e2e02b15e1c079552d918e8caa60e6745972a336269bdda63ff","quote":"The Fair Credit Reporting Act says bankruptcies drop off after seven years anyway."},{"id":"sp:s-avg","source":"src:sam-transcript","start":224,"end":311,"sha256":"7057a81893ee8a5a0c9d21837da084e6e09ffbe6c786e21a39f1de2e6b68812b","quote":"For self-employed income I use the two-year average from the tax returns, nothing else."},{"id":"sp:s-tenure","source":"src:sam-transcript","start":377,"end":456,"sha256":"93ca80a8a402257057f492bd6f922780bab945e24ea2809a0bf172dab7442e54","quote":"I want three years of self-employment history before I treat it like a W-2 job."},{"id":"sp:j-pricing","source":"src:jane-transcript","start":1999,"end":2078,"sha256":"0617f2169e0f83ca55d1a0af971a39f91dce9f08658d26443424c18f2590549d","quote":"I never set the interest rate; pricing is a separate desk and I stay out of it."}],"concepts":[{"id":"k:credit-score","label":"Credit score","alt_labels":["FICO score","score"],"notation":["FICO"],"definition":"Bureau credit score on the 300 to 850 FICO scale.","unit":"points"},{"id":"k:dti","label":"Debt-to-income ratio","alt_labels":["debt to income","debt-to-income"],"notation":["DTI"],"definition":"Total monthly debt payments divided by gross monthly income.","unit":"ratio","depends_on":["k:monthly-debt","k:gross-monthly-income"]},{"id":"k:monthly-debt","label":"Monthly debt payments","alt_labels":["monthly debt"],"definition":"Sum of required monthly payments on all debts.","unit":"USD/month"},{"id":"k:gross-monthly-income","label":"Gross monthly income","alt_labels":["monthly income","gross income","income"],"definition":"Pre-tax income per month.","unit":"USD/month"},{"id":"k:employment-tenure","label":"Employment tenure","alt_labels":["years employed","tenure","years at their job","job"],"definition":"Years in the current position.","unit":"years"},{"id":"k:hard-inquiry","label":"Hard inquiry","alt_labels":["hard inquiries","inquiries","inquiry"],"definition":"A lender credit pull triggered by an application, counted over the last six months.","unit":"count"},{"id":"k:savings-buffer","label":"Savings buffer","alt_labels":["savings","emergency savings"],"definition":"Months of expenses held in liquid savings.","unit":"months"},{"id":"k:medical-debt","label":"Medical debt","alt_labels":["medical bills"],"definition":"Debt arising from medical care.","broader":["k:monthly-debt"]},{"id":"k:co-applicant","label":"Co-applicant","alt_labels":["co-borrower","spouse"],"definition":"A second applicant whose income and obligations are part of the application."},{"id":"k:bankruptcy","label":"Bankruptcy","alt_labels":["bankruptcy discharge"],"definition":"A court-discharged insolvency on the applicant's record."},{"id":"k:self-employment-income","label":"Self-employment income","alt_labels":["self-employed","self employed","1099"],"definition":"Income from the applicant's own business.","broader":["k:gross-monthly-income"]},{"id":"k:approval-tier","label":"Approval tier","alt_labels":["approve","approval","tier","decision"],"definition":"Decision outcome: PRIME, STANDARD, CONDITIONAL, SUBPRIME or DENY."},{"id":"k:interest-rate-pricing","label":"Interest rate pricing","alt_labels":["interest rate","rate","pricing","APR"],"definition":"Setting the rate and price terms for an approved loan."}],"claims":[{"id":"c:prime-approval","type":"Rule","statement":"A credit score of 750 or above qualifies as prime tier and is approved outright.","about":["k:credit-score","k:approval-tier"],"condition":"credit_score >= 750","confidence":0.98,"status":"validated","evidence":["sp:j-prime"],"attributed_to":"ex:jane-doe","confirmed_by":["ex:jane-doe"],"version":"1.0.0"},{"id":"c:standard-score-floor","type":"Threshold","statement":"650 is the minimum credit score for the standard tier; below 650 is subprime.","about":["k:credit-score","k:approval-tier"],"condition":"credit_score >= 650","value":650,"unit":"FICO points","status":"validated","evidence":["sp:j-floor"],"attributed_to":"ex:jane-doe","confirmed_by":["ex:jane-doe"],"version":"1.0.0"},{"id":"c:dti-definition","type":"Definition","statement":"Debt-to-income (DTI) is total monthly debt payments divided by gross monthly income.","about":["k:dti","k:monthly-debt","k:gross-monthly-income"],"status":"validated","evidence":["sp:j-dti-def"],"attributed_to":"ex:jane-doe","confirmed_by":["ex:jane-doe"],"version":"1.0.0"},{"id":"c:dti-ceiling","type":"Threshold","statement":"For the standard tier, DTI must be 43% or lower.","about":["k:dti","k:approval-tier"],"condition":"dti \u003c= 0.43","value":0.43,"unit":"ratio","status":"sme_confirmed","evidence":["sp:j-dti-max"],"attributed_to":"ex:jane-doe","confirmed_by":["ex:jane-doe"],"constrained_by":["reg:reg-z-atr"],"version":"1.0.0","review_note":"43% mirrors the original General QM DTI cap. That cap was replaced by a price-based test in the 2020 ATR/QM amendments; keep as an internal credit policy, not a regulatory requirement."},{"id":"c:employment-min","type":"Threshold","statement":"Standard tier requires at least two years in the current job.","about":["k:employment-tenure","k:approval-tier"],"condition":"employment_years >= 2","value":2,"unit":"years","status":"validated","evidence":["sp:j-emp"],"attributed_to":"ex:jane-doe","confirmed_by":["ex:jane-doe"],"version":"1.0.0"},{"id":"c:inquiry-conditional","type":"Rule","statement":"With more than one hard inquiry in six months, an otherwise standard file becomes CONDITIONAL at about 75% confidence: ask for an explanation of the inquiries and offer a smaller amount.","about":["k:hard-inquiry","k:approval-tier"],"condition":"recent_inquiries > 1","confidence":0.75,"status":"sme_confirmed","evidence":["sp:j-inq-cond"],"attributed_to":"ex:jane-doe","confirmed_by":["ex:jane-doe"],"version":"1.0.0"},{"id":"c:inquiry-desperation","type":"Heuristic","statement":"Three or more hard inquiries in six months signals credit desperation; reject unless there is a strong compensating factor.","about":["k:hard-inquiry"],"condition":"recent_inquiries >= 3","status":"sme_confirmed","modifies":["c:inquiry-conditional"],"evidence":["sp:j-inq-desp"],"attributed_to":"ex:jane-doe","confirmed_by":["ex:jane-doe"],"version":"1.0.0"},{"id":"c:standard-approval","type":"Rule","statement":"Score of 650 or more, DTI of 43% or less, two or more years employed, and at most one hard inquiry is a STANDARD approval at about 92% confidence.","about":["k:approval-tier","k:credit-score","k:dti","k:employment-tenure","k:hard-inquiry"],"condition":"credit_score >= 650 && dti \u003c= 0.43 && employment_years >= 2 && recent_inquiries \u003c= 1","confidence":0.92,"status":"validated","evidence":["sp:j-std"],"attributed_to":"ex:jane-doe","confirmed_by":["ex:jane-doe"],"version":"1.0.0"},{"id":"c:savings-buffer","type":"Heuristic","statement":"Six or more months of expenses in savings reduces the risk assessment by about 10%.","about":["k:savings-buffer"],"status":"sme_confirmed","modifies":["c:inquiry-conditional"],"evidence":["sp:j-sav"],"attributed_to":"ex:jane-doe","confirmed_by":["ex:jane-doe"],"version":"1.0.0"},{"id":"c:medical-debt-half","type":"Heuristic","statement":"Medical debt counts at 50% toward DTI.","about":["k:medical-debt","k:dti"],"status":"extracted","modifies":["c:dti-definition"],"evidence":["sp:j-med"],"attributed_to":"ex:jane-doe","version":"1.0.0","review_note":"Extracted, not yet confirmed. Needs SME confirmation and a check against how bureaus already treat medical collections."},{"id":"c:married-coapplicant","type":"Heuristic","statement":"Married co-applicants are treated as more stable than unmarried partners, so a spouse's income is weighted more heavily.","about":["k:co-applicant"],"status":"blocked","conflicts_with":["reg:ecoa-reg-b"],"evidence":["sp:j-married"],"attributed_to":"ex:jane-doe","version":"1.0.0","review_note":"Blocked: ECOA / Regulation B prohibits discrimination on the basis of marital status."},{"id":"c:age-trajectory","type":"Heuristic","statement":"Applicants aged 25 to 35 with fast-rising income can be approved with a lower score.","about":["k:credit-score"],"status":"blocked","conflicts_with":["reg:ecoa-reg-b"],"evidence":["sp:j-age"],"attributed_to":"ex:jane-doe","version":"1.0.0","review_note":"Blocked: ECOA / Regulation B restricts the use of age in credit decisions. Re-elicit as an income-trajectory signal with no age term."},{"id":"c:bankruptcy-7yr","type":"EdgeCase","statement":"A bankruptcy discharged seven or more years ago is approvable when the rest of the file is strong.","about":["k:bankruptcy","k:approval-tier"],"condition":"years_since_bankruptcy >= 7","status":"sme_confirmed","exception_to":["c:standard-approval"],"constrained_by":["reg:fcra-605"],"evidence":["sp:j-bk"],"attributed_to":"ex:jane-doe","confirmed_by":["ex:jane-doe"],"version":"1.0.0"},{"id":"c:bankruptcy-fcra-rationale","type":"Definition","statement":"Under the FCRA, bankruptcies stop being reported after seven years.","about":["k:bankruptcy"],"status":"blocked","conflicts_with":["reg:fcra-605"],"evidence":["sp:j-bk-why"],"attributed_to":"ex:jane-doe","version":"1.0.0","review_note":"Blocked as a factual misstatement: FCRA section 605(a)(1) allows bankruptcy cases to be reported for up to ten years. The 7-year edge case itself stays valid as policy."},{"id":"c:self-employed-income","type":"EdgeCase","statement":"For self-employed applicants, income is the two-year average from tax returns, not year-to-date figures or 1099s.","about":["k:self-employment-income","k:gross-monthly-income"],"status":"sme_confirmed","exception_to":["c:dti-definition"],"evidence":["sp:s-avg"],"attributed_to":"ex:sam-rivera","confirmed_by":["ex:sam-rivera"],"version":"1.0.0"},{"id":"c:self-employed-tenure","type":"EdgeCase","statement":"Self-employed applicants need three years of self-employment history in place of the two-year job minimum.","about":["k:employment-tenure","k:self-employment-income"],"condition":"self_employed && self_employed_years >= 3","value":3,"unit":"years","status":"sme_confirmed","exception_to":["c:employment-min"],"evidence":["sp:s-tenure"],"attributed_to":"ex:sam-rivera","confirmed_by":["ex:sam-rivera","ex:jane-doe"],"version":"1.0.0"},{"id":"c:excl-pricing","type":"Exclusion","statement":"This expertise does not cover setting interest rates or loan pricing.","about":["k:interest-rate-pricing"],"status":"sme_confirmed","evidence":["sp:j-pricing"],"attributed_to":"ex:jane-doe","confirmed_by":["ex:jane-doe"],"version":"1.0.0"}],"formulas":[{"id":"f:dti","label":"Debt-to-income","expression":"monthly_debt / gross_monthly_income","computes":"k:dti","uses":["k:monthly-debt","k:gross-monthly-income"]}],"regulations":[{"id":"reg:ecoa-reg-b","label":"Equal Credit Opportunity Act / Regulation B","jurisdiction":"US","citation":"15 U.S.C. 1691; 12 CFR Part 1002","description":"Prohibits credit discrimination on the basis of race, color, religion, national origin, sex, marital status, or age (with limited exceptions), among other bases.","source_url":"https://www.consumerfinance.gov/rules-policy/regulations/1002/"},{"id":"reg:fcra-605","label":"Fair Credit Reporting Act section 605","jurisdiction":"US","citation":"15 U.S.C. 1681c(a)","description":"Limits how long adverse information can be reported: bankruptcy cases up to 10 years, most other adverse items 7 years.","source_url":"https://www.law.cornell.edu/uscode/text/15/1681c"},{"id":"reg:reg-z-atr","label":"Regulation Z Ability-to-Repay / Qualified Mortgage rule","jurisdiction":"US","citation":"12 CFR 1026.43","description":"Requires a reasonable, good-faith determination of ability to repay for covered mortgages. The General QM definition moved from a 43% DTI cap to a price-based test in the 2020 amendments.","source_url":"https://www.consumerfinance.gov/rules-policy/regulations/1026/43/"}],"workflows":[{"id":"wf:standard-tier","name":"Standard tier credit decision","steps":[{"id":"s:check-prime","label":"Score at or above 750?","kind":"check","implements":["c:prime-approval"]},{"id":"s:check-floor","label":"Score at or above 650?","kind":"check","implements":["c:standard-score-floor"]},{"id":"s:compute-dti","label":"Compute DTI","kind":"compute","implements":["c:dti-definition"],"uses_formula":"f:dti"},{"id":"s:check-dti","label":"DTI at or under 43%?","kind":"check","implements":["c:dti-ceiling"]},{"id":"s:check-tenure","label":"Two or more years employed (three if self-employed)?","kind":"check","implements":["c:employment-min","c:self-employed-tenure"]},{"id":"s:check-inquiries","label":"At most one hard inquiry in six months?","kind":"check","implements":["c:inquiry-conditional","c:inquiry-desperation"]},{"id":"s:emit-standard","label":"Emit STANDARD approval","kind":"emit","implements":["c:standard-approval"]},{"id":"s:emit-conditional","label":"Emit CONDITIONAL with conditions","kind":"emit","implements":["c:inquiry-conditional"]}]}]};
+const EXAMPLE_TRACE = {"smetp_trace_version":"0.1.0","id":"trace:8245c8b60bb4","graph":"kg:finance/credit-risk-assessment","graph_sha256":"b4d346daac25e435317153d3191559374947bf781ab0c2e9e28ca595389f2319","question":"An applicant has a 690 FICO, $2,100 monthly debt on $6,000 gross monthly income, 4 years at their job, and 2 hard inquiries in the last 6 months. Would you approve, and what rate should we offer?","asked_at":"2026-10-16T06:17:57.036Z","model":{"provider":"anthropic","name":"claude-sonnet-4-5"},"retrieval":{"seeds":["k:credit-score","k:monthly-debt","k:gross-monthly-income","k:employment-tenure","k:hard-inquiry","k:approval-tier","k:interest-rate-pricing"],"hops":1,"retrieved":["k:credit-score","k:monthly-debt","k:gross-monthly-income","k:employment-tenure","k:hard-inquiry","k:approval-tier","k:interest-rate-pricing","k:dti","k:medical-debt","k:self-employment-income","c:prime-approval","c:standard-score-floor","c:standard-approval","c:dti-definition","c:self-employed-income","c:employment-min","c:self-employed-tenure","c:inquiry-conditional","c:inquiry-desperation","c:dti-ceiling","c:bankruptcy-7yr","c:excl-pricing","c:savings-buffer","reg:reg-z-atr","reg:fcra-605"],"context_pack_sha256":"ef397b4da2607578541998d112533a8033daa5eee632b50512c42afd128c2640"},"workflow_runs":[{"workflow":"wf:standard-tier","status":"completed","steps":["s:check-prime","s:check-floor","s:compute-dti","s:check-dti","s:check-tenure","s:check-inquiries","s:emit-conditional"],"bindings":{"credit_score":690,"monthly_debt":2100,"gross_monthly_income":6000,"employment_years":4,"recent_inquiries":2,"dti":0.35,"decision":"CONDITIONAL","confidence":0.75}}],"answer":{"text":"DTI is 35% ($2,100 / $6,000), under the 43% ceiling for the standard tier. A 690 FICO score clears the 650 standard-tier floor, and 4 years at the job clears the two-year employment minimum. The applicant is employed rather than self-employed, so the three-year self-employment exception does not change the tenure check. Because there are 2 hard inquiries in 6 months, the file is CONDITIONAL at about 75% confidence: ask the applicant to explain the inquiries and offer a smaller amount. Files like this default less than 2% of the time, so the risk is low. I can't recommend an interest rate; pricing is outside this expertise.","segments":[{"id":"seg-1","text":"DTI is 35% ($2,100 / $6,000), under the 43% ceiling for the standard tier.","kind":"computed","claims":["c:dti-definition","c:dti-ceiling"],"bindings":["dti"]},{"id":"seg-2","text":"A 690 FICO score clears the 650 standard-tier floor, and 4 years at the job clears the two-year employment minimum.","kind":"entailed","claims":["c:standard-score-floor","c:employment-min"],"bindings":[]},{"id":"seg-3","text":"The applicant is employed rather than self-employed, so the three-year self-employment exception does not change the tenure check.","kind":"synthesized","claims":["c:self-employed-tenure","c:employment-min"],"bindings":[]},{"id":"seg-4","text":"Because there are 2 hard inquiries in 6 months, the file is CONDITIONAL at about 75% confidence: ask the applicant to explain the inquiries and offer a smaller amount.","kind":"computed","claims":["c:inquiry-conditional"],"bindings":["decision","confidence"]},{"id":"seg-5","text":"Files like this default less than 2% of the time, so the risk is low.","kind":"entailed","claims":["c:default-rate-band"],"bindings":[]},{"id":"seg-6","text":"I can't recommend an interest rate; pricing is outside this expertise.","kind":"refusal","claims":["c:excl-pricing"],"bindings":[]}]},"verification":{"verifier":"smetp-trace@0.1.0","verified_at":"2026-10-16T06:17:57.039Z","segments":[{"id":"seg-1","text":"DTI is 35% ($2,100 / $6,000), under the 43% ceiling for the standard tier.","kind":"computed","tal":3,"claims":["c:dti-definition","c:dti-ceiling"],"evidence":["sp:j-dti-def","sp:j-dti-max"],"experts":["ex:jane-doe"],"issues":[]},{"id":"seg-2","text":"A 690 FICO score clears the 650 standard-tier floor, and 4 years at the job clears the two-year employment minimum.","kind":"entailed","tal":4,"claims":["c:standard-score-floor","c:employment-min"],"evidence":["sp:j-floor","sp:j-emp"],"experts":["ex:jane-doe"],"issues":[]},{"id":"seg-3","text":"The applicant is employed rather than self-employed, so the three-year self-employment exception does not change the tenure check.","kind":"synthesized","tal":3,"claims":["c:self-employed-tenure","c:employment-min"],"evidence":["sp:s-tenure","sp:j-emp"],"experts":["ex:sam-rivera","ex:jane-doe"],"issues":[]},{"id":"seg-4","text":"Because there are 2 hard inquiries in 6 months, the file is CONDITIONAL at about 75% confidence: ask the applicant to explain the inquiries and offer a smaller amount.","kind":"computed","tal":3,"claims":["c:inquiry-conditional"],"evidence":["sp:j-inq-cond"],"experts":["ex:jane-doe"],"issues":[]},{"id":"seg-5","text":"Files like this default less than 2% of the time, so the risk is low.","kind":"entailed","tal":0,"claims":["c:default-rate-band"],"evidence":[],"experts":[],"issues":[{"level":"error","code":"unknown_claim","msg":"c:default-rate-band does not exist in kg:finance/credit-risk-assessment"},{"level":"error","code":"unsupported_number","msg":"2% is not in the question, the cited claims, or a reported binding"}]},{"id":"seg-6","text":"I can't recommend an interest rate; pricing is outside this expertise.","kind":"refusal","tal":3,"claims":["c:excl-pricing"],"evidence":["sp:j-pricing"],"experts":["ex:jane-doe"],"issues":[]}],"metrics":{"segments":6,"grounded_ratio":0.8,"mean_tal":2.6,"min_tal":0,"citation_validity":0.8889,"unsupported_numbers":1,"errors":2,"warnings":0},"expert_credit":{"ex:jane-doe":0.9,"ex:sam-rivera":0.1},"verdict":"fail"}};
+
+let G = EXAMPLE_GRAPH, T = EXAMPLE_TRACE, ix, edges = [], selected = null;
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const pct = (n) => `${Math.round(n * 100)}%`;
+
+function index() {
+  ix = new Map();
+  for (const k of ['experts', 'sessions', 'sources', 'spans', 'concepts', 'claims', 'formulas', 'regulations']) for (const n of G[k] || []) ix.set(n.id, { ...n, _k: k });
+  for (const wf of G.workflows || []) for (const s of wf.steps || []) ix.set(s.id, { ...s, _k: 'steps', _wf: wf.name });
+}
+
+function node(id, cls, inner) {
+  return `<button type="button" class="node ${cls}" data-id="${esc(id)}">${inner}</button>`;
+}
+
+function render() {
+  index();
+  edges = [];
+  const v = T.verification || {};
+  const m = v.metrics || {};
+  const segV = new Map((v.segments || []).map((s) => [s.id, s]));
+  $('#question').textContent = T.question;
+  $('#meta').textContent = `${T.model?.provider ?? ''} · ${T.model?.name ?? ''} · graph ${T.graph} · ${T.retrieval?.retrieved?.length ?? 0} nodes in context`;
+  const credit = Object.entries(v.expert_credit || {}).map(([k, n]) => `${esc(ix.get(k)?.name ?? k)} ${pct(n)}`).join(' · ');
+  $('#stats').innerHTML = `
+    <span class="verdict ${esc(v.verdict)}">${esc((v.verdict || 'unverified').replace(/_/g, ' '))}</span>
+    <div class="stat"><b>${m.grounded_ratio !== undefined ? pct(m.grounded_ratio) : '–'}</b><span>sentences grounded</span></div>
+    <div class="stat"><b>${m.mean_tal ?? '–'}</b><span>mean assurance</span></div>
+    <div class="stat"><b>${m.citation_validity !== undefined ? pct(m.citation_validity) : '–'}</b><span>valid citations</span></div>
+    <div class="stat"><b>${m.unsupported_numbers ?? '–'}</b><span>ungrounded numbers</span></div>
+    ${credit ? `<div class="stat"><b style="font-size:15px">${credit}</b><span>expert credit</span></div>` : ''}`;
+
+  // Column 1: answer segments
+  let a = '<h2>Answer</h2>';
+  const cited = [];
+  for (const seg of T.answer.segments) {
+    const sv = segV.get(seg.id) || { tal: '?', issues: [] };
+    const errs = sv.issues.filter((i) => i.level === 'error');
+    a += node(seg.id, `seg ${errs.length ? 'bad' : ''}`, `
+      <div class="row"><span class="tal tal-${sv.tal}">TAL ${sv.tal}</span><span class="pill">${esc(seg.kind)}</span></div>
+      <div class="txt">${esc(seg.text)}</div>
+      ${sv.issues.map((i) => `<div class="issue ${i.level === 'warning' ? 'w' : ''}">${esc(i.code)}</div>`).join('')}`);
+    for (const c of seg.claims || []) { edges.push([seg.id, c]); if (!cited.includes(c)) cited.push(c); }
+  }
+  $('#c-answer').innerHTML = a;
+
+  // Column 2: cited claims, then claims kept out of context
+  let c = '<h2>Claims cited</h2>';
+  const know = [], evid = [], src = [];
+  const add = (arr, id) => { if (id && !arr.includes(id)) arr.push(id); };
+  for (const id of cited) {
+    const cl = ix.get(id);
+    if (!cl || cl._k !== 'claims') { c += node(id, 'ghost bad', `<div class="id">${esc(id)}</div><div class="txt">Not in the graph. The model invented this id.</div>`); continue; }
+    c += claimNode(cl);
+    linkClaim(cl, know, evid, src, add);
+  }
+  const ctx = new Set(T.retrieval?.retrieved || []);
+  const kept = (G.claims || []).filter((cl) => !ctx.has(cl.id) && !cited.includes(cl.id) && (cl.status === 'blocked' || cl.status === 'extracted' || cl.status === 'deprecated'));
+  if (kept.length) {
+    c += '<div class="group-label">Kept out of the model’s context</div>';
+    for (const cl of kept) { c += claimNode(cl, 'blocked'); linkClaim(cl, know, evid, src, add); }
+  }
+  $('#c-claims').innerHTML = c;
+
+  // Column 3: concepts, steps, regulations
+  let k = '<h2>Knowledge</h2>';
+  for (const id of know) {
+    const n = ix.get(id); if (!n) continue;
+    if (n._k === 'concepts') k += node(id, '', `<div class="id">${esc(id)}</div><div class="txt">${esc(n.label)}${n.notation?.length ? ` <span class="mono">(${esc(n.notation.join(', '))})</span>` : ''}</div>`);
+    else if (n._k === 'steps') {
+      const ran = (T.workflow_runs || []).some((r) => (r.steps || []).includes(id));
+      k += node(id, '', `<div class="row"><span class="pill">${ran ? 'step executed' : 'workflow step'}</span></div><div class="id">${esc(id)}</div><div class="txt">${esc(n.label)}</div>`);
+    } else if (n._k === 'regulations') k += node(id, '', `<div class="row"><span class="pill">regulation</span></div><div class="txt">${esc(n.label)}</div><div class="id">${esc(n.citation)}</div>`);
+  }
+  $('#c-know').innerHTML = k;
+
+  // Column 4: evidence spans
+  let e = '<h2>Evidence</h2>';
+  for (const id of evid) {
+    const sp = ix.get(id); if (!sp) continue;
+    e += node(id, '', `<div class="id">${esc(id)} · ${sp.start}–${sp.end}</div><div class="txt">“${esc(sp.quote)}”</div>`);
+  }
+  $('#c-evid').innerHTML = e;
+
+  // Column 5: sources -> experts
+  let s = '<h2>Source</h2>';
+  for (const id of src) {
+    const n = ix.get(id); if (!n) continue;
+    if (n._k === 'experts') s += node(id, '', `<div class="txt"><b>${esc(n.name)}</b></div><div class="id">${esc(n.role)} · ${n.years_experience ?? '?'} yrs</div>`);
+    else if (n._k === 'sessions') s += node(id, '', `<div class="id">${esc(id)}</div><div class="txt">${esc((n.method || []).join(', '))} interview · ${esc(n.date)}</div>`);
+  }
+  $('#c-src').innerHTML = s;
+
+  document.querySelectorAll('.node').forEach((el) => el.addEventListener('click', () => select(el.dataset.id)));
+  select(selected && document.querySelector(`.node[data-id="${CSS.escape(selected)}"]`) ? selected : T.answer.segments[0].id);
+}
+
+function claimNode(cl, extra = '') {
+  return node(cl.id, extra, `
+    <div class="row"><span class="pill st-${esc(cl.status)}">${esc(cl.status.replace('_', ' '))}</span><span class="pill">${esc(cl.type)}</span>${cl.confidence !== undefined ? `<span class="mono">${pct(cl.confidence)}</span>` : ''}</div>
+    <div class="id">${esc(cl.id)}</div><div class="txt">${esc(cl.statement)}</div>`);
+}
+
+function linkClaim(cl, know, evid, src, add) {
+  for (const k of cl.about || []) { add(know, k); edges.push([cl.id, k]); }
+  for (const wf of G.workflows || []) for (const st of wf.steps || []) if ((st.implements || []).includes(cl.id)) { add(know, st.id); edges.push([cl.id, st.id]); }
+  for (const r of [...(cl.constrained_by || []), ...(cl.conflicts_with || [])]) { add(know, r); edges.push([cl.id, r]); }
+  for (const sp of cl.evidence || []) {
+    add(evid, sp); edges.push([cl.id, sp]);
+    const span = ix.get(sp); const source = span && ix.get(span.source);
+    const ses = source?.session;
+    if (ses) { add(src, ses); edges.push([sp, ses]); const ex = ix.get(ses)?.expert; if (ex) { add(src, ex); edges.push([ses, ex]); } }
+  }
+  if (cl.attributed_to) add(src, cl.attributed_to);
+}
+
+function connected(id) {
+  // Walk both directions so selecting any node lights up its whole chain.
+  const seen = new Set([id]);
+  const down = [id], up = [id];
+  while (down.length) { const x = down.pop(); for (const [a, b] of edges) if (a === x && !seen.has(b)) { seen.add(b); down.push(b); } }
+  const upSeen = new Set([id]);
+  while (up.length) { const x = up.pop(); for (const [a, b] of edges) if (b === x && !upSeen.has(a)) { upSeen.add(a); seen.add(a); up.push(a); } }
+  return seen;
+}
+
+function select(id) {
+  selected = id;
+  const on = connected(id);
+  document.querySelectorAll('.node').forEach((el) => {
+    el.classList.toggle('dim', !on.has(el.dataset.id));
+    el.classList.toggle('on', el.dataset.id === id);
+  });
+  drawLinks(on);
+  showDetail(id);
+}
+
+function drawLinks(on) {
+  const svg = $('#links');
+  const chain = $('#chain');
+  if (getComputedStyle(svg).display === 'none') return;
+  const box = chain.getBoundingClientRect();
+  const pos = new Map();
+  document.querySelectorAll('.node').forEach((el) => pos.set(el.dataset.id, el.getBoundingClientRect()));
+  let d = '';
+  for (const [a, b] of edges) {
+    const ra = pos.get(a), rb = pos.get(b);
+    if (!ra || !rb) continue;
+    const x1 = ra.right - box.left, y1 = ra.top + ra.height / 2 - box.top;
+    const x2 = rb.left - box.left, y2 = rb.top + rb.height / 2 - box.top;
+    if (x2 <= x1) continue;
+    const mx = (x1 + x2) / 2;
+    const lit = on.has(a) && on.has(b);
+    d += `<path d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}" fill="none" stroke="var(${lit ? '--accent' : '--line'})" stroke-width="${lit ? 1.6 : 1}" opacity="${lit ? 0.9 : 0.55}"/>`;
+  }
+  svg.setAttribute('viewBox', `0 0 ${box.width} ${box.height}`);
+  svg.innerHTML = d;
+}
+
+async function verifyHash(text, expected) {
+  try {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+    const hex = [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+    return hex === expected ? 'match' : 'mismatch';
+  } catch { return 'unavailable'; }
+}
+
+function showDetail(id) {
+  const el = $('#detail');
+  const seg = T.answer.segments.find((s) => s.id === id);
+  const n = ix.get(id);
+  if (seg) {
+    const sv = (T.verification?.segments || []).find((s) => s.id === id) || { issues: [], tal: '?' };
+    const runs = (T.workflow_runs || []).flatMap((r) => (seg.bindings || []).map((b) => `${b} = ${JSON.stringify(r.bindings?.[b])}`));
+    el.innerHTML = `<div><h2>Answer sentence</h2><h3>${esc(seg.text)}</h3>
+      <dl><dt>Support</dt><dd>${esc(seg.kind)}</dd><dt>Assurance</dt><dd><span class="tal tal-${sv.tal}">TAL ${sv.tal}</span></dd>
+      <dt>Cites</dt><dd class="mono">${esc((seg.claims || []).join(', ') || 'nothing')}</dd>
+      ${runs.length ? `<dt>Bindings</dt><dd class="mono">${esc(runs.join(' · '))}</dd>` : ''}
+      <dt>Experts</dt><dd>${esc((sv.experts || []).map((x) => ix.get(x)?.name ?? x).join(', ') || 'none')}</dd></dl></div>
+      <div><h2>Verifier</h2>${sv.issues.length ? sv.issues.map((i) => `<div class="note ${i.level === 'error' ? 'bad' : ''}"><b>${esc(i.code)}</b> ${esc(i.msg)}</div>`).join('') : '<p>All deterministic checks passed: ids exist, claims are eligible, numbers are grounded, evidence hashes verify.</p>'}</div>`;
+    return;
+  }
+  if (!n) { el.innerHTML = `<div><h2>Unknown id</h2><h3 class="mono">${esc(id)}</h3><p>This id does not exist in the graph. The verifier marks any sentence citing it as unsupported (TAL 0).</p></div><div></div>`; return; }
+  if (n._k === 'claims') {
+    const sp = ix.get(n.evidence?.[0]);
+    el.innerHTML = `<div><h2>${esc(n.type)} claim</h2><h3>${esc(n.statement)}</h3>
+      <dl><dt>Id</dt><dd class="mono">${esc(n.id)}</dd><dt>Status</dt><dd><span class="pill st-${esc(n.status)}">${esc(n.status)}</span></dd>
+      ${n.condition ? `<dt>Condition</dt><dd class="mono">${esc(n.condition)}</dd>` : ''}
+      ${n.confidence !== undefined ? `<dt>Confidence</dt><dd>${pct(n.confidence)}</dd>` : ''}
+      <dt>Said by</dt><dd>${esc(ix.get(n.attributed_to)?.name ?? n.attributed_to)}</dd>
+      <dt>Confirmed by</dt><dd>${esc((n.confirmed_by || []).map((x) => ix.get(x)?.name ?? x).join(', ') || 'not yet')}</dd>
+      ${n.exception_to?.length ? `<dt>Exception to</dt><dd class="mono">${esc(n.exception_to.join(', '))}</dd>` : ''}
+      ${n.conflicts_with?.length ? `<dt>Conflicts with</dt><dd>${esc(n.conflicts_with.map((r) => ix.get(r)?.label ?? r).join(', '))}</dd>` : ''}</dl>
+      ${n.review_note ? `<div class="note ${n.status === 'blocked' ? 'bad' : ''}">${esc(n.review_note)}</div>` : ''}</div>
+      <div id="evbox">${sp ? evidenceHtml(sp) : '<p>No evidence span.</p>'}</div>`;
+    if (sp) hashLine(sp);
+    return;
+  }
+  if (n._k === 'spans') { el.innerHTML = `<div><h2>Evidence span</h2><h3>“${esc(n.quote)}”</h3><dl><dt>Id</dt><dd class="mono">${esc(n.id)}</dd><dt>Offsets</dt><dd class="mono">${n.start}–${n.end}</dd><dt>Source</dt><dd>${esc(ix.get(n.source)?.title ?? n.source)}</dd></dl></div><div>${evidenceHtml(n)}</div>`; hashLine(n); return; }
+  if (n._k === 'concepts') { el.innerHTML = `<div><h2>Concept</h2><h3>${esc(n.label)}</h3><dl><dt>Id</dt><dd class="mono">${esc(n.id)}</dd>${n.notation?.length ? `<dt>Notation</dt><dd class="mono">${esc(n.notation.join(', '))}</dd>` : ''}<dt>Also called</dt><dd>${esc((n.alt_labels || []).join(', ') || '–')}</dd>${n.unit ? `<dt>Unit</dt><dd>${esc(n.unit)}</dd>` : ''}</dl></div><div><h2>Definition</h2><p>${esc(n.definition)}</p><p class="meta">Concepts double as the dictionary. Retrieval seeds from any of these labels appearing in the question.</p></div>`; return; }
+  if (n._k === 'steps') { el.innerHTML = `<div><h2>Workflow step</h2><h3>${esc(n.label)}</h3><dl><dt>Id</dt><dd class="mono">${esc(n.id)}</dd><dt>Workflow</dt><dd>${esc(n._wf)}</dd><dt>Implements</dt><dd class="mono">${esc((n.implements || []).join(', '))}</dd></dl></div><div><p>Because every step names the claims it implements, a workflow run is already a citation path. Computed sentences must trace to an executed step.</p></div>`; return; }
+  if (n._k === 'regulations') { el.innerHTML = `<div><h2>Regulation</h2><h3>${esc(n.label)}</h3><dl><dt>Citation</dt><dd class="mono">${esc(n.citation)}</dd><dt>Jurisdiction</dt><dd>${esc(n.jurisdiction)}</dd></dl></div><div><p>${esc(n.description)}</p>${n.source_url ? `<p><a href="${esc(n.source_url)}" target="_blank" rel="noopener">Read the source</a></p>` : ''}</div>`; return; }
+  if (n._k === 'experts') { const own = (G.claims || []).filter((c) => c.attributed_to === n.id); el.innerHTML = `<div><h2>Expert</h2><h3>${esc(n.name)}</h3><dl><dt>Role</dt><dd>${esc(n.role)}</dd><dt>Experience</dt><dd>${n.years_experience} years</dd><dt>Claims</dt><dd>${own.length} (${own.filter((c) => c.status === 'blocked').length} blocked)</dd><dt>Credit here</dt><dd>${T.verification?.expert_credit?.[n.id] !== undefined ? pct(T.verification.expert_credit[n.id]) : '0%'}</dd></dl></div><div><p>Credit for each grounded sentence is split across the experts behind its claims. Summed over answers, this is the basis for knowledge royalties.</p></div>`; return; }
+  if (n._k === 'sessions') { el.innerHTML = `<div><h2>Elicitation session</h2><h3>${esc((n.method || []).join(', '))} interview</h3><dl><dt>Id</dt><dd class="mono">${esc(n.id)}</dd><dt>Date</dt><dd>${esc(n.date)}</dd><dt>Duration</dt><dd>${n.duration_min} min</dd><dt>Expert</dt><dd>${esc(ix.get(n.expert)?.name)}</dd></dl></div><div></div>`; return; }
+}
+
+function evidenceHtml(sp) {
+  const src = ix.get(sp.source);
+  if (!src?.text) return `<h2>Evidence</h2><p>Source text is held privately. Span hash: <span class="mono">${esc(sp.sha256)}</span></p>`;
+  const a = Math.max(0, sp.start - 220), b = Math.min(src.text.length, sp.end + 220);
+  const ctx = `${a > 0 ? '…' : ''}${esc(src.text.slice(a, sp.start))}<mark>${esc(src.text.slice(sp.start, sp.end))}</mark>${esc(src.text.slice(sp.end, b))}${b < src.text.length ? '…' : ''}`;
+  return `<h2>In the transcript</h2><div class="hash mono" id="hashline">sha256 ${esc(sp.sha256.slice(0, 16))}… <span class="pill">checking</span></div><pre class="transcript">${ctx}</pre>`;
+}
+
+async function hashLine(sp) {
+  const src = ix.get(sp.source);
+  if (!src?.text) return;
+  const r = await verifyHash(src.text.slice(sp.start, sp.end), sp.sha256);
+  const line = document.getElementById('hashline');
+  if (!line) return;
+  const label = { match: 'hash matches source text', mismatch: 'hash mismatch: text was altered', unavailable: 'hash check unavailable here' }[r];
+  line.innerHTML = `sha256 ${esc(sp.sha256.slice(0, 16))}… <span class="pill ${r === 'mismatch' ? 'err' : ''}">${label}</span>`;
+}
+
+function readFile(input) {
+  return new Promise((res, rej) => { const f = input.files?.[0]; if (!f) return res(null); const r = new FileReader(); r.onload = () => { try { res(JSON.parse(r.result)); } catch (e) { rej(new Error(`${f.name} is not valid JSON`)); } }; r.readAsText(f); });
+}
+async function onLoad() {
+  const msg = $('#loadMsg'); msg.textContent = '';
+  try {
+    const g = await readFile($('#fGraph')), t = await readFile($('#fTrace'));
+    if (g) G = g;
+    if (t) { if (!t.answer?.segments) throw new Error('Trace has no answer.segments. Run cli.mjs verify first.'); T = t; }
+    selected = null; render();
+  } catch (e) { msg.textContent = e.message; }
+}
+$('#fGraph').addEventListener('change', onLoad);
+$('#fTrace').addEventListener('change', onLoad);
+let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => selected && select(selected), 120); });
+render();
+if (document.fonts?.ready) document.fonts.ready.then(() => selected && select(selected));
+</script>
+
+</html>

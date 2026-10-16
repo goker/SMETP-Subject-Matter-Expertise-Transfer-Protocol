@@ -254,11 +254,32 @@ def assess_credit_risk(credit_score, debt_to_income, ...):
 
 This repo contains:
 
-1. **`/framework`** - SMETP methodology documentation
-2. **`/examples`** - Real skills (Finance, Healthcare, Legal, etc.)
-3. **`/tools`** - Interview extraction templates
-4. **`/schemas`** - JSON schema for skill documents
-5. **`/case-studies`** - Domain-specific case studies
+1. **[`FRAMEWORK.md`](FRAMEWORK.md)** - SMETP methodology documentation
+2. **[`/examples`](examples)** - Example skills (Finance, Healthcare, Legal), plus a claim-level knowledge graph and a verified answer trace
+3. **[`/templates`](templates)** - Interview templates per domain
+4. **[`/ontology`](ontology)** - SMETP Knowledge Ontology (OWL, JSON-LD context, SHACL rules)
+5. **[`/schemas`](schemas)** - JSON Schemas for the knowledge graph and answer traces
+6. **[`/tools/smetp-trace`](tools/smetp-trace)** - Zero-dependency toolkit to plug a graph into any LLM and verify answers
+7. **[`/viewer`](viewer)** - Single-file trace viewer: answer sentence to claim to transcript span to expert
+
+---
+
+## Traceable Answers (v0.6 draft)
+
+Every sentence an LLM says on behalf of an expert should resolve to a **claim** in a knowledge graph, every claim to a **hashed span** of what the expert actually said, and every span to the **expert** who said it. The new layer makes that concrete:
+
+- **Ontology** aligned to W3C PROV-O and SKOS: Claims (Rule, Threshold, Heuristic, EdgeCase, Definition, Exclusion), Concepts that double as the dictionary, typed relations such as `exceptionTo`, `conflictsWith` and `implements`.
+- **Cite-or-Refuse contract** that works the same for Claude, GPT, Gemini or a local model.
+- **Deterministic verifier** that rejects invented ids, blocked claims and ungrounded numbers, and scores each sentence with a Trace Assurance Level from 0 to 4.
+- **Expert credit** computed from traces, the basis for knowledge royalties.
+
+```bash
+node tools/smetp-trace/cli.mjs context examples/graph/credit_risk.graph.json "Would you approve a 690 FICO with 35% DTI?"
+node tools/smetp-trace/cli.mjs verify  examples/graph/credit_risk.graph.json examples/traces/credit_risk.trace.json
+open viewer/trace-viewer.html
+```
+
+Read the design: [`docs/knowledge-graph-and-traceability.md`](docs/knowledge-graph-and-traceability.md).
 
 ---
 

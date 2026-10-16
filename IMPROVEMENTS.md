@@ -1,5 +1,17 @@
 # SMETP Improvements & Enhancement Roadmap
 
+## Traceability Layer (v0.6 draft, in progress)
+
+Addresses items 1, 4, 5, 11 and 15 below with one mechanism: claim-level knowledge with hashed evidence, a vendor-neutral answer trace, and a deterministic verifier.
+
+- Ontology: [`ontology/`](ontology) (PROV-O and SKOS aligned, SHACL integrity rules)
+- Schemas: [`schemas/`](schemas)
+- Toolkit: [`tools/smetp-trace/`](tools/smetp-trace) (retrieve, prompt any LLM, verify, credit experts)
+- Viewer: [`viewer/trace-viewer.html`](viewer/trace-viewer.html)
+- Design and gap analysis vs the reference implementation: [`docs/knowledge-graph-and-traceability.md`](docs/knowledge-graph-and-traceability.md)
+
+---
+
 ## Core Improvements (Immediate)
 
 ### 1. **Benchmarking Framework**

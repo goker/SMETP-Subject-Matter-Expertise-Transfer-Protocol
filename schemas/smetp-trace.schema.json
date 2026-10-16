@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ieataiforbreakfast.com/schemas/smetp-trace-0.1.json",
+  "title": "SMETP Answer Trace",
+  "description": "A record of one LLM answer produced against an SMETP knowledge graph: what was retrieved, what ran, what each sentence cites, and the verifier's verdict. Vendor-neutral: works for Claude, GPT, Gemini, or a local model.",
+  "type": "object",
+  "required": ["smetp_trace_version", "id", "graph", "question", "model", "answer"],
+  "properties": {
+    "smetp_trace_version": { "type": "string", "pattern": "^0\\.1\\.\\d+$" },
+    "id": { "type": "string" },
+    "graph": { "type": "string", "description": "Graph id (kg:...) the answer was produced against." },
+    "graph_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$", "description": "Hash of the graph file at answer time, so later edits cannot silently rewrite history." },
+    "question": { "type": "string" },
+    "asked_at": { "type": "string", "format": "date-time" },
+    "model": {
+      "type": "object",
+      "required": ["provider", "name"],
+      "properties": {
+        "provider": { "type": "string", "examples": ["anthropic", "openai", "google", "local"] },
+        "name": { "type": "string" },
+        "temperature": { "type": "number" }
+      }
+    },
+    "retrieval": {
+      "type": "object",
+      "properties": {
+        "seeds": { "type": "array", "items": { "type": "string" } },
+        "hops": { "type": "integer", "minimum": 0 },
+        "retrieved": { "type": "array", "items": { "type": "string" } },
+        "context_pack_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "workflow_runs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["workflow", "steps"],
+        "properties": {
+          "workflow": { "type": "string" },
+          "steps": { "type": "array", "items": { "type": "string" } },
+          "status": { "enum": ["completed", "escalated", "failed", "paused"] },
+          "bindings": { "type": "object", "additionalProperties": true }
+        }
+      }
+    },
+    "answer": {
+      "type": "object",
+      "required": ["segments"],
+      "properties": {
+        "text": { "type": "string" },
+        "segments": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["id", "text", "kind", "claims"],
+            "properties": {
+              "id": { "type": "string" },
+              "text": { "type": "string" },
+              "kind": { "enum": ["entailed", "computed", "synthesized", "unsupported", "refusal"] },
+              "claims": { "type": "array", "items": { "type": "string" } },
+              "bindings": { "type": "array", "items": { "type": "string" }, "description": "Names of workflow bindings this segment reports (for kind=computed)." }
+            }
+          }
+        }
+      }
+    },
+    "verification": {
+      "type": "object",
+      "description": "Filled in by the verifier (tools/smetp-trace). Never trusted when supplied by the model.",
+      "properties": {
+        "verifier": { "type": "string" },
+        "verified_at": { "type": "string", "format": "date-time" },
+        "segments": { "type": "array" },
+        "metrics": { "type": "object" },
+        "expert_credit": { "type": "object", "additionalProperties": { "type": "number" } },
+        "verdict": { "enum": ["pass", "pass_with_warnings", "fail"] }
+      }
+    }
+  }
+}
