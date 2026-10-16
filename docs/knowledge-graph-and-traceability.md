@@ -262,15 +262,15 @@ Concrete changes for the ieataiforbreakfast.com codebase, in priority order. Ite
 
 | # | Where | Today | Change | Status |
 |---|---|---|---|---|
-| 1 | `lib/twin/ask.ts`, `askLlmConstrained` | Rejects zero-citation answers but accepts any cited id | Run `verifyTrace` on every LLM answer. Reject unknown ids and ungrounded numbers. Return TAL per sentence to the UI. |
-| 2 | `lib/twin/ask.ts`, `matchesRefuseTopic` | Matches only the first word of each refuse topic, so a topic like "credit pricing" refuses every question containing "credit" | Model refuse topics as Exclusion claims about concepts and match on concept seeds. |
-| 3 | `@smetp/spec` `SkillDocument` | `heuristics`, `edge_cases`, `concepts` are `string[]` | Add `claims: ClaimSchema[]` (additive, v0.6). Keep strings for back-compat; the compiler emits both. |
-| 4 | `@smetp/spec` `WorkflowStepSchema` | Steps have no link to knowledge | Add optional `implements: string[]` to `StepBase`. |
-| 5 | `db/migrations` | Evidence is `evidence_interview_id` | Add `evidence_spans` and `claims` tables, and `answer_traces` for persisted traces (sketch below). |
-| 6 | `concept_nodes` + `dictionary_entries` | Two tables linked by `refines_concept` | Treat dictionary entries as SKOS labels on concepts; keep the table as a view during migration. |
-| 7 | `kg_edges.relation` | Free text | Constrain to the relation vocabulary in section 3. |
-| 8 | Skill package (`references/`) | Graph is product-only | Ship `references/knowledge.graph.json` (claims, concepts, spans with hashes, optionally without source text) so the package is traceable offline. |
-| 9 | `/twin/[id]` | Trust strip shows source type | Add the per-sentence TAL badges and a "Why?" drawer using the viewer layout. |
+| 1 | `lib/twin/ask.ts`, `askLlmConstrained` | Rejects zero-citation answers but accepts any cited id | Run `verifyTrace` on every LLM answer. Reject unknown ids and ungrounded numbers. Return TAL per sentence to the UI. | Done in site PR #1 |
+| 2 | `lib/twin/ask.ts`, `matchesRefuseTopic` | Matches only the first word of each refuse topic, so a topic like "credit pricing" refuses every question containing "credit" | Model refuse topics as Exclusion claims about concepts and match on concept seeds. | Done in site PR #1 |
+| 3 | `@smetp/spec` `SkillDocument` | `heuristics`, `edge_cases`, `concepts` are `string[]` | Add `claims: ClaimSchema[]` (additive, v0.6). Keep strings for back-compat; the compiler emits both. | Done: `@smetp/spec` 0.6.0 |
+| 4 | `@smetp/spec` `WorkflowStepSchema` | Steps have no link to knowledge | Add optional `implements: string[]` to `StepBase`. | Done: `@smetp/spec` 0.6.0 |
+| 5 | `db/migrations` | Evidence is `evidence_interview_id` | Add `evidence_spans` and `claims` tables, and `answer_traces` for persisted traces (sketch below). | Done: migration 009 |
+| 6 | `concept_nodes` + `dictionary_entries` | Two tables linked by `refines_concept` | Treat dictionary entries as SKOS labels on concepts; keep the table as a view during migration. | Open |
+| 7 | `kg_edges.relation` | Free text | Constrain to the relation vocabulary in section 3. | Partly: typed for claim edges |
+| 8 | Skill package (`references/`) | Graph is product-only | Ship `references/knowledge.graph.json` (claims, concepts, spans with hashes, optionally without source text) so the package is traceable offline. | Open |
+| 9 | `/twin/[id]` | Trust strip shows source type | Add the per-sentence TAL badges and a "Why?" drawer using the viewer layout. | Partly: TAL badge shipped, drawer open |
 
 Migration sketch (Postgres):
 
