@@ -1,0 +1,56 @@
+{
+  "segments": [
+    {
+      "text": "DTI is 35% ($2,100 / $6,000), under the 43% ceiling for the standard tier.",
+      "kind": "computed",
+      "claims": [
+        "c:dti-definition",
+        "c:dti-ceiling"
+      ],
+      "bindings": [
+        "dti"
+      ]
+    },
+    {
+      "text": "A 690 FICO score clears the 650 standard-tier floor, and 4 years at the job clears the two-year employment minimum.",
+      "kind": "entailed",
+      "claims": [
+        "c:standard-score-floor",
+        "c:employment-min"
+      ]
+    },
+    {
+      "text": "The applicant is employed rather than self-employed, so the three-year self-employment exception does not change the tenure check.",
+      "kind": "synthesized",
+      "claims": [
+        "c:self-employed-tenure",
+        "c:employment-min"
+      ]
+    },
+    {
+      "text": "Because there are 2 hard inquiries in 6 months, the file is CONDITIONAL at about 75% confidence: ask the applicant to explain the inquiries and offer a smaller amount.",
+      "kind": "computed",
+      "claims": [
+        "c:inquiry-conditional"
+      ],
+      "bindings": [
+        "decision",
+        "confidence"
+      ]
+    },
+    {
+      "text": "Files like this default less than 2% of the time, so the risk is low.",
+      "kind": "entailed",
+      "claims": [
+        "c:default-rate-band"
+      ]
+    },
+    {
+      "text": "I can't recommend an interest rate; pricing is outside this expertise.",
+      "kind": "refusal",
+      "claims": [
+        "c:excl-pricing"
+      ]
+    }
+  ]
+}

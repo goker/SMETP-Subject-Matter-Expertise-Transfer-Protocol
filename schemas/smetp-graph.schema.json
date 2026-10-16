@@ -1,0 +1,166 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ieataiforbreakfast.com/schemas/smetp-graph-0.1.json",
+  "title": "SMETP Knowledge Graph (JSON form)",
+  "description": "Portable, LLM-agnostic knowledge graph produced by an SMETP capture. The JSON-LD form is obtained by attaching ontology/context.jsonld.",
+  "type": "object",
+  "required": ["smetp_kg_version", "id", "domain", "experts", "sources", "spans", "concepts", "claims"],
+  "properties": {
+    "@context": { "type": ["string", "object"] },
+    "smetp_kg_version": { "type": "string", "pattern": "^0\\.1\\.\\d+$" },
+    "id": { "$ref": "#/$defs/id" },
+    "domain": { "type": "string" },
+    "title": { "type": "string" },
+    "experts": { "type": "array", "items": { "$ref": "#/$defs/expert" }, "minItems": 1 },
+    "sessions": { "type": "array", "items": { "$ref": "#/$defs/session" } },
+    "sources": { "type": "array", "items": { "$ref": "#/$defs/source" } },
+    "spans": { "type": "array", "items": { "$ref": "#/$defs/span" } },
+    "concepts": { "type": "array", "items": { "$ref": "#/$defs/concept" } },
+    "claims": { "type": "array", "items": { "$ref": "#/$defs/claim" } },
+    "formulas": { "type": "array", "items": { "$ref": "#/$defs/formula" } },
+    "regulations": { "type": "array", "items": { "$ref": "#/$defs/regulation" } },
+    "workflows": { "type": "array", "items": { "$ref": "#/$defs/workflow" } }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z]+:[A-Za-z0-9._/-]+$", "description": "Prefixed id. Prefixes: ex (expert), ses (session), src (source), sp (span), k (concept), c (claim), f (formula), reg (regulation), wf (workflow), s (step), kg (graph)." },
+    "ids": { "type": "array", "items": { "$ref": "#/$defs/id" }, "uniqueItems": true },
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "expert": {
+      "type": "object",
+      "required": ["id", "name"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "years_experience": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "session": {
+      "type": "object",
+      "required": ["id", "expert"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "expert": { "$ref": "#/$defs/id" },
+        "method": { "type": "array", "items": { "enum": ["CDM", "ACTA", "shadowing", "think_aloud", "semi_structured", "document_review"] } },
+        "date": { "type": "string", "format": "date" },
+        "duration_min": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "source": {
+      "type": "object",
+      "required": ["id", "kind", "sha256"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "kind": { "enum": ["transcript", "policy", "sop", "regulation", "case", "other"] },
+        "title": { "type": "string" },
+        "session": { "$ref": "#/$defs/id" },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "text": { "type": "string", "description": "Optional inline text. When omitted, span hashes are still verifiable by whoever holds the source." },
+        "visibility": { "enum": ["private", "shared", "public"] }
+      }
+    },
+    "span": {
+      "type": "object",
+      "required": ["id", "source", "start", "end", "sha256"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "source": { "$ref": "#/$defs/id" },
+        "start": { "type": "integer", "minimum": 0 },
+        "end": { "type": "integer", "minimum": 0 },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "quote": { "type": "string" }
+      }
+    },
+    "concept": {
+      "type": "object",
+      "required": ["id", "label", "definition"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "label": { "type": "string" },
+        "alt_labels": { "type": "array", "items": { "type": "string" } },
+        "notation": { "type": "array", "items": { "type": "string" } },
+        "definition": { "type": "string" },
+        "unit": { "type": "string" },
+        "broader": { "$ref": "#/$defs/ids" },
+        "depends_on": { "$ref": "#/$defs/ids" }
+      }
+    },
+    "claim": {
+      "type": "object",
+      "required": ["id", "type", "statement", "about", "status", "evidence", "attributed_to"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "type": { "enum": ["Rule", "Threshold", "Heuristic", "EdgeCase", "Definition", "Exclusion"] },
+        "statement": { "type": "string", "minLength": 1 },
+        "about": { "$ref": "#/$defs/ids", "minItems": 1 },
+        "condition": { "type": "string" },
+        "value": { "type": "number" },
+        "unit": { "type": "string" },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "status": { "enum": ["extracted", "sme_confirmed", "validated", "blocked", "deprecated"] },
+        "evidence": { "$ref": "#/$defs/ids", "minItems": 1 },
+        "attributed_to": { "$ref": "#/$defs/id" },
+        "confirmed_by": { "$ref": "#/$defs/ids" },
+        "version": { "type": "string" },
+        "supersedes": { "$ref": "#/$defs/id" },
+        "exception_to": { "$ref": "#/$defs/ids" },
+        "modifies": { "$ref": "#/$defs/ids" },
+        "constrained_by": { "$ref": "#/$defs/ids" },
+        "conflicts_with": { "$ref": "#/$defs/ids" },
+        "contradicts": { "$ref": "#/$defs/ids" },
+        "review_note": { "type": "string" },
+        "visibility": { "enum": ["private", "shared", "public"] }
+      },
+      "allOf": [
+        { "if": { "properties": { "type": { "const": "EdgeCase" } } }, "then": { "required": ["exception_to"] } },
+        { "if": { "required": ["conflicts_with"], "properties": { "conflicts_with": { "minItems": 1 } } }, "then": { "properties": { "status": { "const": "blocked" } } } },
+        { "if": { "properties": { "status": { "enum": ["sme_confirmed", "validated"] } } }, "then": { "required": ["confirmed_by"], "properties": { "confirmed_by": { "minItems": 1 } } } }
+      ]
+    },
+    "formula": {
+      "type": "object",
+      "required": ["id", "label", "expression", "computes"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "label": { "type": "string" },
+        "expression": { "type": "string" },
+        "computes": { "$ref": "#/$defs/id" },
+        "uses": { "$ref": "#/$defs/ids" }
+      }
+    },
+    "regulation": {
+      "type": "object",
+      "required": ["id", "label", "jurisdiction"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "label": { "type": "string" },
+        "jurisdiction": { "type": "string" },
+        "citation": { "type": "string" },
+        "description": { "type": "string" },
+        "source_url": { "type": "string", "format": "uri" }
+      }
+    },
+    "workflow": {
+      "type": "object",
+      "required": ["id", "name", "steps"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "name": { "type": "string" },
+        "steps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "label", "implements"],
+            "properties": {
+              "id": { "$ref": "#/$defs/id" },
+              "label": { "type": "string" },
+              "kind": { "enum": ["check", "compute", "input", "tool_call", "escalate", "emit"] },
+              "implements": { "$ref": "#/$defs/ids", "minItems": 1 },
+              "uses_formula": { "$ref": "#/$defs/id" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

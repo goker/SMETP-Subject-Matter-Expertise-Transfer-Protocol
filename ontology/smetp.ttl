@@ -1,0 +1,204 @@
+@prefix smetp: <https://ieataiforbreakfast.com/ns/smetp#> .
+@prefix prov:  <http://www.w3.org/ns/prov#> .
+@prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix dct:   <http://purl.org/dc/terms/> .
+
+# =============================================================================
+# SMETP Knowledge Ontology (SKO): v0.1.0 (draft, proposed for @smetp/spec 0.6)
+#
+# Three layers, one graph:
+#
+#   1. SOURCE layer    : who said what, where, when        (PROV-O aligned)
+#   2. KNOWLEDGE layer : what is known, as atomic Claims   (SKOS aligned)
+#   3. USE layer       : how knowledge was used to answer  (PROV-O aligned)
+#
+# The Claim is the unit of transfer, the unit of citation, and the unit of
+# credit. Everything an LLM says on behalf of an expert must resolve to one
+# or more Claims, and every Claim must resolve to evidence.
+# =============================================================================
+
+<https://ieataiforbreakfast.com/ns/smetp>
+    a owl:Ontology ;
+    dct:title "SMETP Knowledge Ontology" ;
+    dct:description "Ontology for transferring subject-matter expertise into a knowledge graph that any LLM can query, cite, and be verified against." ;
+    dct:creator "Goker Ezberci" ;
+    dct:license <https://opensource.org/licenses/MIT> ;
+    owl:versionInfo "0.1.0" ;
+    owl:imports <http://www.w3.org/ns/prov-o#> , <http://www.w3.org/2004/02/skos/core> .
+
+# -----------------------------------------------------------------------------
+# 1. SOURCE layer
+# -----------------------------------------------------------------------------
+
+smetp:Expert a owl:Class ;
+    rdfs:subClassOf prov:Person ;
+    rdfs:label "Expert" ;
+    rdfs:comment "A subject-matter expert whose knowledge is captured. Credit for answers flows back to Experts." .
+
+smetp:ElicitationSession a owl:Class ;
+    rdfs:subClassOf prov:Activity ;
+    rdfs:label "Elicitation session" ;
+    rdfs:comment "An interview, shadowing, or think-aloud session (CDM, ACTA, semi-structured). Generates SourceDocuments." .
+
+smetp:SourceDocument a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "Source document" ;
+    rdfs:comment "Any evidence container: transcript, SOP, policy, regulation text, historical case file. Identified by a content hash so edits are detectable." .
+
+smetp:EvidenceSpan a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "Evidence span" ;
+    rdfs:comment "A character-offset span inside a SourceDocument, with a SHA-256 of the exact text. The smallest thing a Claim can point at." .
+
+# -----------------------------------------------------------------------------
+# 2. KNOWLEDGE layer
+# -----------------------------------------------------------------------------
+
+smetp:Concept a owl:Class ;
+    rdfs:subClassOf skos:Concept ;
+    rdfs:label "Concept" ;
+    rdfs:comment "A domain concept. Dictionary terms ARE Concepts: skos:prefLabel is the canonical term, skos:altLabel holds synonyms, skos:notation holds abbreviations, skos:definition holds the plain-language meaning. This merges the separate concept_nodes and dictionary_entries tables of v0.3." .
+
+smetp:Claim a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "Claim" ;
+    rdfs:comment "An atomic, citable assertion of expert knowledge (a nanopublication-style unit: assertion + provenance + publication info). Claims are versioned, never edited in place." .
+
+smetp:Rule a owl:Class ;      rdfs:subClassOf smetp:Claim ; rdfs:label "Rule" ;      rdfs:comment "Deterministic IF/THEN decision logic." .
+smetp:Threshold a owl:Class ; rdfs:subClassOf smetp:Claim ; rdfs:label "Threshold" ; rdfs:comment "A numeric cut-point on a Concept, with unit." .
+smetp:Heuristic a owl:Class ; rdfs:subClassOf smetp:Claim ; rdfs:label "Heuristic" ; rdfs:comment "A tacit pattern or adjustment the expert uses." .
+smetp:EdgeCase a owl:Class ;  rdfs:subClassOf smetp:Claim ; rdfs:label "Edge case" ;  rdfs:comment "A special situation that overrides or modifies a Rule." .
+smetp:Definition a owl:Class ; rdfs:subClassOf smetp:Claim ; rdfs:label "Definition" ; rdfs:comment "The expert's working definition of a Concept." .
+smetp:Exclusion a owl:Class ; rdfs:subClassOf smetp:Claim ; rdfs:label "Exclusion" ;  rdfs:comment "A topic or decision the expert explicitly refuses to cover. Drives Cite-or-Refuse." .
+
+smetp:Formula a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "Formula" ;
+    rdfs:comment "A computable expression over Concepts (e.g. DTI = monthly_debt / monthly_income)." .
+
+smetp:Regulation a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "Regulation" ;
+    rdfs:comment "An external authority (statute, rule, standard) with jurisdiction and citation. Claims can be constrained by, or conflict with, Regulations." .
+
+smetp:Workflow a owl:Class ;
+    rdfs:subClassOf prov:Plan ;
+    rdfs:label "Workflow" ;
+    rdfs:comment "An executable step machine (@smetp/spec WorkflowSchema). A prov:Plan the runtime follows." .
+
+smetp:Step a owl:Class ;
+    rdfs:label "Workflow step" ;
+    rdfs:comment "One step of a Workflow. Each Step declares which Claims it implements, so a workflow run is automatically a citation path." .
+
+# -----------------------------------------------------------------------------
+# 3. USE layer
+# -----------------------------------------------------------------------------
+
+smetp:AnswerTrace a owl:Class ;
+    rdfs:subClassOf prov:Activity ;
+    rdfs:label "Answer trace" ;
+    rdfs:comment "One question answered by one LLM (any vendor) against the graph. Records retrieval, model, workflow execution, segments, and verification." .
+
+smetp:Retrieval a owl:Class ;
+    rdfs:subClassOf prov:Activity ;
+    rdfs:label "Retrieval" ;
+    rdfs:comment "Graph retrieval: seed nodes, hop expansion, and the context pack handed to the model." .
+
+smetp:Answer a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "Answer" .
+
+smetp:AnswerSegment a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "Answer segment" ;
+    rdfs:comment "A sentence-level unit of an Answer. Each segment must be supported by Claims or flagged unsupported." .
+
+smetp:Verification a owl:Class ;
+    rdfs:subClassOf prov:Activity ;
+    rdfs:label "Verification" ;
+    rdfs:comment "The deterministic check that cited Claims exist, are eligible, are in scope, and actually support the segment." .
+
+# -----------------------------------------------------------------------------
+# Controlled vocabularies
+# -----------------------------------------------------------------------------
+
+smetp:ClaimStatus a owl:Class ; rdfs:label "Claim status" .
+smetp:extracted     a smetp:ClaimStatus ; rdfs:label "extracted" ;     rdfs:comment "Pulled from evidence by an LLM. Not yet reviewed." .
+smetp:sme_confirmed a smetp:ClaimStatus ; rdfs:label "sme_confirmed" ; rdfs:comment "The originating expert (or a second SME) confirmed the wording." .
+smetp:validated     a smetp:ClaimStatus ; rdfs:label "validated" ;     rdfs:comment "Passed historical-case validation." .
+smetp:blocked       a smetp:ClaimStatus ; rdfs:label "blocked" ;       rdfs:comment "Conflicts with a Regulation or safety rule. Never eligible for answers." .
+smetp:deprecated    a smetp:ClaimStatus ; rdfs:label "deprecated" ;    rdfs:comment "Superseded by a newer Claim version." .
+
+smetp:SupportKind a owl:Class ; rdfs:label "Support kind" .
+smetp:entailed    a smetp:SupportKind ; rdfs:comment "The segment restates what the Claim asserts." .
+smetp:computed    a smetp:SupportKind ; rdfs:comment "The segment reports a value computed by a Workflow step or Formula." .
+smetp:synthesized a smetp:SupportKind ; rdfs:comment "The segment combines two or more Claims." .
+smetp:unsupported a smetp:SupportKind ; rdfs:comment "No eligible Claim supports the segment." .
+smetp:refusal     a smetp:SupportKind ; rdfs:comment "The segment declines, citing an Exclusion or missing evidence." .
+
+# -----------------------------------------------------------------------------
+# Knowledge relations (typed; replaces the free-text kg_edges.relation)
+# -----------------------------------------------------------------------------
+
+smetp:about          a owl:ObjectProperty ; rdfs:domain smetp:Claim ;    rdfs:range smetp:Concept ; rdfs:label "about" .
+smetp:dependsOn      a owl:ObjectProperty ; rdfs:domain smetp:Concept ;  rdfs:range smetp:Concept ; rdfs:label "depends on" .
+smetp:computes       a owl:ObjectProperty ; rdfs:domain smetp:Formula ;  rdfs:range smetp:Concept ; rdfs:label "computes" .
+smetp:usesVariable   a owl:ObjectProperty ; rdfs:domain smetp:Formula ;  rdfs:range smetp:Concept ; rdfs:label "uses variable" .
+smetp:exceptionTo    a owl:ObjectProperty ; rdfs:domain smetp:EdgeCase ; rdfs:range smetp:Rule ;    rdfs:label "exception to" ;
+    rdfs:comment "Retrieval MUST pull in every EdgeCase that is an exception to a retrieved Rule." .
+smetp:modifies       a owl:ObjectProperty ; rdfs:domain smetp:Heuristic ; rdfs:range smetp:Claim ;  rdfs:label "modifies" .
+smetp:constrainedBy  a owl:ObjectProperty ; rdfs:range smetp:Regulation ; rdfs:label "constrained by" .
+smetp:conflictsWith  a owl:ObjectProperty ; rdfs:domain smetp:Claim ; rdfs:range smetp:Regulation ; rdfs:label "conflicts with" ;
+    rdfs:comment "A Claim that conflicts with a Regulation must carry status smetp:blocked." .
+smetp:contradicts    a owl:ObjectProperty , owl:SymmetricProperty ; rdfs:domain smetp:Claim ; rdfs:range smetp:Claim ; rdfs:label "contradicts" .
+smetp:supersedes     a owl:ObjectProperty ; rdfs:domain smetp:Claim ; rdfs:range smetp:Claim ; rdfs:subPropertyOf prov:wasRevisionOf ; rdfs:label "supersedes" .
+smetp:implements     a owl:ObjectProperty ; rdfs:domain smetp:Step ; rdfs:range smetp:Claim ; rdfs:label "implements" .
+smetp:hasStep        a owl:ObjectProperty ; rdfs:domain smetp:Workflow ; rdfs:range smetp:Step ; rdfs:label "has step" .
+smetp:usesFormula    a owl:ObjectProperty ; rdfs:domain smetp:Step ; rdfs:range smetp:Formula ; rdfs:label "uses formula" .
+
+# -----------------------------------------------------------------------------
+# Provenance relations
+# -----------------------------------------------------------------------------
+
+smetp:evidencedBy  a owl:ObjectProperty ; rdfs:domain smetp:Claim ; rdfs:range smetp:EvidenceSpan ; rdfs:subPropertyOf prov:wasDerivedFrom ; rdfs:label "evidenced by" .
+smetp:spanOf       a owl:ObjectProperty ; rdfs:domain smetp:EvidenceSpan ; rdfs:range smetp:SourceDocument ; rdfs:label "span of" .
+smetp:confirmedBy  a owl:ObjectProperty ; rdfs:domain smetp:Claim ; rdfs:range smetp:Expert ; rdfs:label "confirmed by" .
+smetp:status       a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:domain smetp:Claim ; rdfs:range smetp:ClaimStatus ; rdfs:label "status" .
+# Attribution reuses prov:wasAttributedTo (Claim -> Expert) and prov:wasGeneratedBy (Claim/SourceDocument -> ElicitationSession).
+
+# -----------------------------------------------------------------------------
+# Use relations
+# -----------------------------------------------------------------------------
+
+smetp:hasSegment   a owl:ObjectProperty ; rdfs:domain smetp:Answer ; rdfs:range smetp:AnswerSegment ; rdfs:label "has segment" .
+smetp:supportedBy  a owl:ObjectProperty ; rdfs:domain smetp:AnswerSegment ; rdfs:range smetp:Claim ; rdfs:label "supported by" .
+smetp:supportKind  a owl:ObjectProperty ; rdfs:domain smetp:AnswerSegment ; rdfs:range smetp:SupportKind ; rdfs:label "support kind" .
+smetp:retrieved    a owl:ObjectProperty ; rdfs:domain smetp:Retrieval ; rdfs:label "retrieved" .
+smetp:seededFrom   a owl:ObjectProperty ; rdfs:domain smetp:Retrieval ; rdfs:range smetp:Concept ; rdfs:label "seeded from" .
+smetp:executedStep a owl:ObjectProperty ; rdfs:domain smetp:AnswerTrace ; rdfs:range smetp:Step ; rdfs:label "executed step" .
+# An AnswerTrace prov:used its Retrieval's context pack, prov:wasAssociatedWith a model (prov:SoftwareAgent),
+# and the Answer prov:wasGeneratedBy the AnswerTrace.
+
+# -----------------------------------------------------------------------------
+# Data properties
+# -----------------------------------------------------------------------------
+
+smetp:statement     a owl:DatatypeProperty ; rdfs:domain smetp:Claim ; rdfs:range xsd:string ; rdfs:comment "Canonical natural-language wording, confirmed by the expert." .
+smetp:condition     a owl:DatatypeProperty ; rdfs:domain smetp:Rule ; rdfs:range xsd:string ; rdfs:comment "Machine expression evaluated by @smetp/runtime." .
+smetp:confidence    a owl:DatatypeProperty ; rdfs:range xsd:decimal ; rdfs:comment "Calibrated confidence in [0,1]." .
+smetp:value         a owl:DatatypeProperty ; rdfs:domain smetp:Threshold ; rdfs:range xsd:decimal .
+smetp:unit          a owl:DatatypeProperty ; rdfs:range xsd:string .
+smetp:expression    a owl:DatatypeProperty ; rdfs:domain smetp:Formula ; rdfs:range xsd:string .
+smetp:start         a owl:DatatypeProperty ; rdfs:domain smetp:EvidenceSpan ; rdfs:range xsd:nonNegativeInteger .
+smetp:end           a owl:DatatypeProperty ; rdfs:domain smetp:EvidenceSpan ; rdfs:range xsd:nonNegativeInteger .
+smetp:textSha256    a owl:DatatypeProperty ; rdfs:range xsd:string ; rdfs:comment "SHA-256 hex of the exact span or document text. Detects tampering and drift." .
+smetp:jurisdiction  a owl:DatatypeProperty ; rdfs:domain smetp:Regulation ; rdfs:range xsd:string .
+smetp:citation      a owl:DatatypeProperty ; rdfs:domain smetp:Regulation ; rdfs:range xsd:string .
+smetp:visibility    a owl:DatatypeProperty ; rdfs:range xsd:string ; rdfs:comment "private | shared | public. Tenant isolation is enforced before retrieval." .
+smetp:version       a owl:DatatypeProperty ; rdfs:range xsd:string .
+smetp:assuranceLevel a owl:DatatypeProperty ; rdfs:domain smetp:AnswerSegment ; rdfs:range xsd:nonNegativeInteger ;
+    rdfs:comment "Trace Assurance Level 0-4 (see docs/knowledge-graph-and-traceability.md)." .

@@ -1,0 +1,134 @@
+@prefix smetp: <https://ieataiforbreakfast.com/ns/smetp#> .
+@prefix prov:  <http://www.w3.org/ns/prov#> .
+@prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
+@prefix sh:    <http://www.w3.org/ns/shacl#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+
+# =============================================================================
+# SHACL shapes for the SMETP Knowledge Ontology.
+# These encode the integrity rules that make answers traceable. The
+# zero-dependency verifier in tools/smetp-trace enforces the same rules on the
+# JSON form; run these shapes with any SHACL engine (pySHACL, TopBraid, Jena)
+# on the JSON-LD form.
+# =============================================================================
+
+smetp:ClaimShape
+    a sh:NodeShape ;
+    sh:targetClass smetp:Claim ;
+    sh:property [
+        sh:path smetp:statement ;
+        sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ;
+        sh:message "Every Claim needs exactly one canonical statement." ;
+    ] ;
+    sh:property [
+        sh:path smetp:evidencedBy ;
+        sh:minCount 1 ; sh:class smetp:EvidenceSpan ;
+        sh:message "No evidence, no claim: every Claim must point at at least one EvidenceSpan." ;
+    ] ;
+    sh:property [
+        sh:path prov:wasAttributedTo ;
+        sh:minCount 1 ; sh:class smetp:Expert ;
+        sh:message "Every Claim must be attributed to an Expert so credit can flow back." ;
+    ] ;
+    sh:property [
+        sh:path smetp:status ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:in ( smetp:extracted smetp:sme_confirmed smetp:validated smetp:blocked smetp:deprecated ) ;
+    ] ;
+    sh:property [
+        sh:path smetp:about ;
+        sh:minCount 1 ; sh:class smetp:Concept ;
+        sh:message "Every Claim must be anchored to at least one Concept (that is how retrieval finds it)." ;
+    ] ;
+    sh:property [
+        sh:path smetp:confidence ;
+        sh:maxCount 1 ; sh:minInclusive 0 ; sh:maxInclusive 1 ;
+    ] .
+
+smetp:ConfirmedClaimShape
+    a sh:NodeShape ;
+    sh:targetClass smetp:Claim ;
+    sh:sparql [
+        sh:message "A claim with status sme_confirmed or validated must name at least one confirming Expert." ;
+        sh:select """
+            PREFIX smetp: <https://ieataiforbreakfast.com/ns/smetp#>
+            SELECT $this WHERE {
+              $this smetp:status ?s .
+              FILTER (?s IN (smetp:sme_confirmed, smetp:validated))
+              FILTER NOT EXISTS { $this smetp:confirmedBy ?e }
+            }""" ;
+    ] .
+
+smetp:RegulatoryConflictShape
+    a sh:NodeShape ;
+    sh:targetClass smetp:Claim ;
+    sh:sparql [
+        sh:message "A claim that conflicts with a Regulation must be blocked." ;
+        sh:select """
+            PREFIX smetp: <https://ieataiforbreakfast.com/ns/smetp#>
+            SELECT $this WHERE {
+              $this smetp:conflictsWith ?r .
+              FILTER NOT EXISTS { $this smetp:status smetp:blocked }
+            }""" ;
+    ] .
+
+smetp:EvidenceSpanShape
+    a sh:NodeShape ;
+    sh:targetClass smetp:EvidenceSpan ;
+    sh:property [ sh:path smetp:spanOf ; sh:minCount 1 ; sh:maxCount 1 ; sh:class smetp:SourceDocument ] ;
+    sh:property [ sh:path smetp:start ; sh:minCount 1 ; sh:datatype xsd:nonNegativeInteger ] ;
+    sh:property [ sh:path smetp:end ; sh:minCount 1 ; sh:datatype xsd:nonNegativeInteger ] ;
+    sh:property [
+        sh:path smetp:textSha256 ;
+        sh:minCount 1 ; sh:pattern "^[0-9a-f]{64}$" ;
+        sh:message "Spans carry a SHA-256 of their exact text so tampering and transcript drift are detectable." ;
+    ] .
+
+smetp:ConceptShape
+    a sh:NodeShape ;
+    sh:targetClass smetp:Concept ;
+    sh:property [ sh:path skos:prefLabel ; sh:minCount 1 ; sh:message "Every Concept needs one canonical label." ] ;
+    sh:property [ sh:path skos:definition ; sh:minCount 1 ; sh:message "Every Concept needs a definition (it doubles as the dictionary entry)." ] .
+
+smetp:EdgeCaseShape
+    a sh:NodeShape ;
+    sh:targetClass smetp:EdgeCase ;
+    sh:property [
+        sh:path smetp:exceptionTo ;
+        sh:minCount 1 ; sh:class smetp:Rule ;
+        sh:message "An EdgeCase must name the Rule (or Threshold) it overrides, so retrieval can never return a rule without its exceptions." ;
+    ] .
+
+smetp:StepShape
+    a sh:NodeShape ;
+    sh:targetClass smetp:Step ;
+    sh:property [
+        sh:path smetp:implements ;
+        sh:minCount 1 ; sh:class smetp:Claim ;
+        sh:message "Every workflow Step must implement at least one Claim, so a workflow run is a citation path." ;
+    ] .
+
+smetp:AnswerSegmentShape
+    a sh:NodeShape ;
+    sh:targetClass smetp:AnswerSegment ;
+    sh:property [ sh:path smetp:supportKind ; sh:minCount 1 ; sh:maxCount 1 ] ;
+    sh:sparql [
+        sh:message "A segment that is not unsupported must be supported by at least one Claim." ;
+        sh:select """
+            PREFIX smetp: <https://ieataiforbreakfast.com/ns/smetp#>
+            SELECT $this WHERE {
+              $this smetp:supportKind ?k .
+              FILTER (?k != smetp:unsupported)
+              FILTER NOT EXISTS { $this smetp:supportedBy ?c }
+            }""" ;
+    ] ;
+    sh:sparql [
+        sh:message "Answers may never cite blocked or deprecated claims." ;
+        sh:select """
+            PREFIX smetp: <https://ieataiforbreakfast.com/ns/smetp#>
+            SELECT $this WHERE {
+              $this smetp:supportedBy ?c .
+              ?c smetp:status ?s .
+              FILTER (?s IN (smetp:blocked, smetp:deprecated))
+            }""" ;
+    ] .

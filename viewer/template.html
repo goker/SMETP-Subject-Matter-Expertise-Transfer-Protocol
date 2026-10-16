@@ -1,0 +1,401 @@
+<title>SMETP Trace Viewer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a left-to-right chain of custody. Answer -> Claims -> Knowledge -> Evidence -> Source, with drawn links. */
+:root {
+  --bg: #f5f7f9;
+  --surface: #ffffff;
+  --ink: #17212b;
+  --muted: #5b6876;
+  --line: #d8dfe6;
+  --accent: #1f4e79;
+  --accent-soft: #e3ecf5;
+  --fail: #b3261e;
+  --fail-soft: #fbe9e7;
+  --warn: #9a6200;
+  --warn-soft: #fbf1dc;
+  --t0: #b3261e; --t1: #b86e00; --t2: #6f7f2a; --t3: #2f7d5b; --t4: #1f4e79;
+  --mark: #fff0b3;
+  --f-display: "Newsreader", "Iowan Old Style", Georgia, serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f151b; --surface: #17202a; --ink: #e4eaf0; --muted: #93a1af; --line: #2a3644;
+  --accent: #8ab8e6; --accent-soft: #1c2c3d; --fail: #f2867c; --fail-soft: #3a1c1a; --warn: #e6b45c; --warn-soft: #33270f;
+  --t0: #f2867c; --t1: #e6b45c; --t2: #b9c86a; --t3: #6fcf9f; --t4: #8ab8e6; --mark: #4a3f10; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0f151b; --surface: #17202a; --ink: #e4eaf0; --muted: #93a1af; --line: #2a3644;
+  --accent: #8ab8e6; --accent-soft: #1c2c3d; --fail: #f2867c; --fail-soft: #3a1c1a; --warn: #e6b45c; --warn-soft: #33270f;
+  --t0: #f2867c; --t1: #e6b45c; --t2: #b9c86a; --t3: #6fcf9f; --t4: #8ab8e6; --mark: #4a3f10; color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 14px/1.5 var(--f-body); }
+.wrap { max-width: 1480px; margin: 0 auto; padding-block: 28px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 22px; }
+h1 { font: 600 clamp(26px, 3.4vw, 38px)/1.1 var(--f-display); margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+h2 { font: 600 12px/1.2 var(--f-body); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0; }
+.mono { font-family: var(--f-mono); font-size: 12px; }
+.lede { color: var(--muted); max-width: 70ch; margin: 6px 0 0; }
+
+header.top { display: flex; flex-wrap: wrap; gap: 16px 32px; align-items: end; justify-content: space-between; }
+.question { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; display: grid; gap: 6px; }
+.question p { margin: 0; font: 500 17px/1.45 var(--f-display); max-width: 90ch; }
+.meta { color: var(--muted); }
+
+.stats { display: flex; flex-wrap: wrap; gap: 10px 26px; align-items: baseline; font-variant-numeric: tabular-nums; }
+.stat { display: grid; gap: 2px; }
+.stat b { font: 600 22px/1 var(--f-display); }
+.stat span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.verdict { font: 600 12px/1 var(--f-body); letter-spacing: 0.08em; text-transform: uppercase; padding: 7px 10px; border-radius: 4px; }
+.verdict.fail { background: var(--fail-soft); color: var(--fail); }
+.verdict.pass_with_warnings { background: var(--warn-soft); color: var(--warn); }
+.verdict.pass { background: var(--accent-soft); color: var(--accent); }
+
+.chain { position: relative; display: grid; grid-template-columns: 1.35fr 1.35fr 1fr 1.2fr 0.8fr; gap: 0 44px; align-items: start; }
+.chain svg.links { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+.col { display: grid; gap: 8px; min-width: 0; position: relative; z-index: 1; }
+.col > h2 { padding-bottom: 6px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+.group-label { font-size: 11px; color: var(--muted); margin-top: 10px; text-transform: uppercase; letter-spacing: 0.06em; }
+
+.node { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 9px 11px; cursor: pointer; transition: opacity .15s, border-color .15s, box-shadow .15s; min-width: 0; text-align: left; font: inherit; color: inherit; width: 100%; }
+.node:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.node .id { font: 500 11px/1.3 var(--f-mono); color: var(--muted); overflow-wrap: anywhere; }
+.node .txt { margin-top: 3px; overflow-wrap: anywhere; }
+.node.seg .txt { font: 15px/1.45 var(--f-display); }
+.node.dim { opacity: 0.32; }
+.node.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.node.bad { border-color: var(--fail); background: var(--fail-soft); }
+.node.ghost { border-style: dashed; }
+.node.blocked { background: transparent; border-style: dashed; }
+.row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.pill { font: 500 10.5px/1 var(--f-body); letter-spacing: 0.04em; text-transform: uppercase; padding: 4px 6px; border-radius: 3px; background: var(--accent-soft); color: var(--accent); white-space: nowrap; }
+.pill.st-validated { background: var(--accent-soft); color: var(--t4); }
+.pill.st-sme_confirmed { background: var(--accent-soft); color: var(--t3); }
+.pill.st-extracted { background: var(--warn-soft); color: var(--warn); }
+.pill.st-blocked, .pill.err { background: var(--fail-soft); color: var(--fail); }
+.tal { font: 600 11px/1 var(--f-mono); padding: 4px 6px; border-radius: 3px; color: var(--surface); }
+.tal-0 { background: var(--t0); } .tal-1 { background: var(--t1); } .tal-2 { background: var(--t2); } .tal-3 { background: var(--t3); } .tal-4 { background: var(--t4); }
+.issue { font-size: 12px; color: var(--fail); margin-top: 4px; }
+.issue.w { color: var(--warn); }
+
+.detail { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 18px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 24px; }
+.detail h3 { font: 600 20px/1.25 var(--f-display); margin: 4px 0 8px; text-wrap: balance; }
+.detail dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 14px; margin: 0; }
+.detail dt { color: var(--muted); font-size: 12px; }
+.detail dd { margin: 0; overflow-wrap: anywhere; }
+.note { margin-top: 12px; padding: 10px 12px; border-left: 3px solid var(--warn); background: var(--warn-soft); }
+.note.bad { border-color: var(--fail); background: var(--fail-soft); }
+.transcript { font: 13px/1.6 var(--f-mono); white-space: pre-wrap; overflow-wrap: anywhere; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 12px; max-height: 320px; overflow: auto; margin: 8px 0 0; }
+.transcript mark { background: var(--mark); color: inherit; padding: 1px 0; }
+.hash { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; color: var(--muted); font-size: 12px; align-items: center; }
+.legend .row { gap: 6px; }
+.load { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; font-size: 12px; color: var(--muted); }
+.load label { display: inline-flex; gap: 6px; align-items: center; border: 1px solid var(--line); border-radius: 4px; padding: 6px 10px; background: var(--surface); cursor: pointer; color: var(--ink); }
+.load input { font: inherit; max-width: 200px; }
+#loadMsg { color: var(--fail); }
+
+@media (max-width: 1100px) {
+  .chain { grid-template-columns: 1fr 1fr; gap: 22px; }
+  .chain svg.links { display: none; }
+}
+@media (max-width: 720px) {
+  .chain { grid-template-columns: minmax(0, 1fr); }
+  .detail { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) { .node { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Where did this answer come from?</h1>
+      <p class="lede">Every sentence an LLM says on behalf of an expert is traced to claims in the SMETP knowledge graph, then to hashed transcript spans, then to the expert who said it. Select any box to follow its chain.</p>
+    </div>
+    <div class="stats" id="stats"></div>
+  </header>
+
+  <section class="question" aria-label="Question">
+    <h2>Question</h2>
+    <p id="question"></p>
+    <div class="meta mono" id="meta"></div>
+  </section>
+
+  <div class="legend" aria-label="Legend">
+    <span>Trace Assurance Level</span>
+    <span class="row"><span class="tal tal-0">0</span> unsupported or invalid</span>
+    <span class="row"><span class="tal tal-1">1</span> cites a node, evidence unverified</span>
+    <span class="row"><span class="tal tal-2">2</span> hashed evidence</span>
+    <span class="row"><span class="tal tal-3">3</span> SME-confirmed</span>
+    <span class="row"><span class="tal tal-4">4</span> validated on cases</span>
+  </div>
+
+  <section class="chain" id="chain" aria-label="Trace chain">
+    <svg class="links" id="links" aria-hidden="true"></svg>
+    <div class="col" id="c-answer"><h2>Answer</h2></div>
+    <div class="col" id="c-claims"><h2>Claims cited</h2></div>
+    <div class="col" id="c-know"><h2>Knowledge</h2></div>
+    <div class="col" id="c-evid"><h2>Evidence</h2></div>
+    <div class="col" id="c-src"><h2>Source</h2></div>
+  </section>
+
+  <section class="detail" id="detail" aria-live="polite"></section>
+
+  <div class="load">
+    <span>Inspect your own trace:</span>
+    <label for="fGraph">Graph JSON <input type="file" id="fGraph" accept=".json,application/json"></label>
+    <label for="fTrace">Verified trace JSON <input type="file" id="fTrace" accept=".json,application/json"></label>
+    <span id="loadMsg"></span>
+  </div>
+</div>
+
+<script>
+const EXAMPLE_GRAPH = /*GRAPH*/null;
+const EXAMPLE_TRACE = /*TRACE*/null;
+
+let G = EXAMPLE_GRAPH, T = EXAMPLE_TRACE, ix, edges = [], selected = null;
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const pct = (n) => `${Math.round(n * 100)}%`;
+
+function index() {
+  ix = new Map();
+  for (const k of ['experts', 'sessions', 'sources', 'spans', 'concepts', 'claims', 'formulas', 'regulations']) for (const n of G[k] || []) ix.set(n.id, { ...n, _k: k });
+  for (const wf of G.workflows || []) for (const s of wf.steps || []) ix.set(s.id, { ...s, _k: 'steps', _wf: wf.name });
+}
+
+function node(id, cls, inner) {
+  return `<button type="button" class="node ${cls}" data-id="${esc(id)}">${inner}</button>`;
+}
+
+function render() {
+  index();
+  edges = [];
+  const v = T.verification || {};
+  const m = v.metrics || {};
+  const segV = new Map((v.segments || []).map((s) => [s.id, s]));
+  $('#question').textContent = T.question;
+  $('#meta').textContent = `${T.model?.provider ?? ''} · ${T.model?.name ?? ''} · graph ${T.graph} · ${T.retrieval?.retrieved?.length ?? 0} nodes in context`;
+  const credit = Object.entries(v.expert_credit || {}).map(([k, n]) => `${esc(ix.get(k)?.name ?? k)} ${pct(n)}`).join(' · ');
+  $('#stats').innerHTML = `
+    <span class="verdict ${esc(v.verdict)}">${esc((v.verdict || 'unverified').replace(/_/g, ' '))}</span>
+    <div class="stat"><b>${m.grounded_ratio !== undefined ? pct(m.grounded_ratio) : '–'}</b><span>sentences grounded</span></div>
+    <div class="stat"><b>${m.mean_tal ?? '–'}</b><span>mean assurance</span></div>
+    <div class="stat"><b>${m.citation_validity !== undefined ? pct(m.citation_validity) : '–'}</b><span>valid citations</span></div>
+    <div class="stat"><b>${m.unsupported_numbers ?? '–'}</b><span>ungrounded numbers</span></div>
+    ${credit ? `<div class="stat"><b style="font-size:15px">${credit}</b><span>expert credit</span></div>` : ''}`;
+
+  // Column 1: answer segments
+  let a = '<h2>Answer</h2>';
+  const cited = [];
+  for (const seg of T.answer.segments) {
+    const sv = segV.get(seg.id) || { tal: '?', issues: [] };
+    const errs = sv.issues.filter((i) => i.level === 'error');
+    a += node(seg.id, `seg ${errs.length ? 'bad' : ''}`, `
+      <div class="row"><span class="tal tal-${sv.tal}">TAL ${sv.tal}</span><span class="pill">${esc(seg.kind)}</span></div>
+      <div class="txt">${esc(seg.text)}</div>
+      ${sv.issues.map((i) => `<div class="issue ${i.level === 'warning' ? 'w' : ''}">${esc(i.code)}</div>`).join('')}`);
+    for (const c of seg.claims || []) { edges.push([seg.id, c]); if (!cited.includes(c)) cited.push(c); }
+  }
+  $('#c-answer').innerHTML = a;
+
+  // Column 2: cited claims, then claims kept out of context
+  let c = '<h2>Claims cited</h2>';
+  const know = [], evid = [], src = [];
+  const add = (arr, id) => { if (id && !arr.includes(id)) arr.push(id); };
+  for (const id of cited) {
+    const cl = ix.get(id);
+    if (!cl || cl._k !== 'claims') { c += node(id, 'ghost bad', `<div class="id">${esc(id)}</div><div class="txt">Not in the graph. The model invented this id.</div>`); continue; }
+    c += claimNode(cl);
+    linkClaim(cl, know, evid, src, add);
+  }
+  const ctx = new Set(T.retrieval?.retrieved || []);
+  const kept = (G.claims || []).filter((cl) => !ctx.has(cl.id) && !cited.includes(cl.id) && (cl.status === 'blocked' || cl.status === 'extracted' || cl.status === 'deprecated'));
+  if (kept.length) {
+    c += '<div class="group-label">Kept out of the model’s context</div>';
+    for (const cl of kept) { c += claimNode(cl, 'blocked'); linkClaim(cl, know, evid, src, add); }
+  }
+  $('#c-claims').innerHTML = c;
+
+  // Column 3: concepts, steps, regulations
+  let k = '<h2>Knowledge</h2>';
+  for (const id of know) {
+    const n = ix.get(id); if (!n) continue;
+    if (n._k === 'concepts') k += node(id, '', `<div class="id">${esc(id)}</div><div class="txt">${esc(n.label)}${n.notation?.length ? ` <span class="mono">(${esc(n.notation.join(', '))})</span>` : ''}</div>`);
+    else if (n._k === 'steps') {
+      const ran = (T.workflow_runs || []).some((r) => (r.steps || []).includes(id));
+      k += node(id, '', `<div class="row"><span class="pill">${ran ? 'step executed' : 'workflow step'}</span></div><div class="id">${esc(id)}</div><div class="txt">${esc(n.label)}</div>`);
+    } else if (n._k === 'regulations') k += node(id, '', `<div class="row"><span class="pill">regulation</span></div><div class="txt">${esc(n.label)}</div><div class="id">${esc(n.citation)}</div>`);
+  }
+  $('#c-know').innerHTML = k;
+
+  // Column 4: evidence spans
+  let e = '<h2>Evidence</h2>';
+  for (const id of evid) {
+    const sp = ix.get(id); if (!sp) continue;
+    e += node(id, '', `<div class="id">${esc(id)} · ${sp.start}–${sp.end}</div><div class="txt">“${esc(sp.quote)}”</div>`);
+  }
+  $('#c-evid').innerHTML = e;
+
+  // Column 5: sources -> experts
+  let s = '<h2>Source</h2>';
+  for (const id of src) {
+    const n = ix.get(id); if (!n) continue;
+    if (n._k === 'experts') s += node(id, '', `<div class="txt"><b>${esc(n.name)}</b></div><div class="id">${esc(n.role)} · ${n.years_experience ?? '?'} yrs</div>`);
+    else if (n._k === 'sessions') s += node(id, '', `<div class="id">${esc(id)}</div><div class="txt">${esc((n.method || []).join(', '))} interview · ${esc(n.date)}</div>`);
+  }
+  $('#c-src').innerHTML = s;
+
+  document.querySelectorAll('.node').forEach((el) => el.addEventListener('click', () => select(el.dataset.id)));
+  select(selected && document.querySelector(`.node[data-id="${CSS.escape(selected)}"]`) ? selected : T.answer.segments[0].id);
+}
+
+function claimNode(cl, extra = '') {
+  return node(cl.id, extra, `
+    <div class="row"><span class="pill st-${esc(cl.status)}">${esc(cl.status.replace('_', ' '))}</span><span class="pill">${esc(cl.type)}</span>${cl.confidence !== undefined ? `<span class="mono">${pct(cl.confidence)}</span>` : ''}</div>
+    <div class="id">${esc(cl.id)}</div><div class="txt">${esc(cl.statement)}</div>`);
+}
+
+function linkClaim(cl, know, evid, src, add) {
+  for (const k of cl.about || []) { add(know, k); edges.push([cl.id, k]); }
+  for (const wf of G.workflows || []) for (const st of wf.steps || []) if ((st.implements || []).includes(cl.id)) { add(know, st.id); edges.push([cl.id, st.id]); }
+  for (const r of [...(cl.constrained_by || []), ...(cl.conflicts_with || [])]) { add(know, r); edges.push([cl.id, r]); }
+  for (const sp of cl.evidence || []) {
+    add(evid, sp); edges.push([cl.id, sp]);
+    const span = ix.get(sp); const source = span && ix.get(span.source);
+    const ses = source?.session;
+    if (ses) { add(src, ses); edges.push([sp, ses]); const ex = ix.get(ses)?.expert; if (ex) { add(src, ex); edges.push([ses, ex]); } }
+  }
+  if (cl.attributed_to) add(src, cl.attributed_to);
+}
+
+function connected(id) {
+  // Walk both directions so selecting any node lights up its whole chain.
+  const seen = new Set([id]);
+  const down = [id], up = [id];
+  while (down.length) { const x = down.pop(); for (const [a, b] of edges) if (a === x && !seen.has(b)) { seen.add(b); down.push(b); } }
+  const upSeen = new Set([id]);
+  while (up.length) { const x = up.pop(); for (const [a, b] of edges) if (b === x && !upSeen.has(a)) { upSeen.add(a); seen.add(a); up.push(a); } }
+  return seen;
+}
+
+function select(id) {
+  selected = id;
+  const on = connected(id);
+  document.querySelectorAll('.node').forEach((el) => {
+    el.classList.toggle('dim', !on.has(el.dataset.id));
+    el.classList.toggle('on', el.dataset.id === id);
+  });
+  drawLinks(on);
+  showDetail(id);
+}
+
+function drawLinks(on) {
+  const svg = $('#links');
+  const chain = $('#chain');
+  if (getComputedStyle(svg).display === 'none') return;
+  const box = chain.getBoundingClientRect();
+  const pos = new Map();
+  document.querySelectorAll('.node').forEach((el) => pos.set(el.dataset.id, el.getBoundingClientRect()));
+  let d = '';
+  for (const [a, b] of edges) {
+    const ra = pos.get(a), rb = pos.get(b);
+    if (!ra || !rb) continue;
+    const x1 = ra.right - box.left, y1 = ra.top + ra.height / 2 - box.top;
+    const x2 = rb.left - box.left, y2 = rb.top + rb.height / 2 - box.top;
+    if (x2 <= x1) continue;
+    const mx = (x1 + x2) / 2;
+    const lit = on.has(a) && on.has(b);
+    d += `<path d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}" fill="none" stroke="var(${lit ? '--accent' : '--line'})" stroke-width="${lit ? 1.6 : 1}" opacity="${lit ? 0.9 : 0.55}"/>`;
+  }
+  svg.setAttribute('viewBox', `0 0 ${box.width} ${box.height}`);
+  svg.innerHTML = d;
+}
+
+async function verifyHash(text, expected) {
+  try {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+    const hex = [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+    return hex === expected ? 'match' : 'mismatch';
+  } catch { return 'unavailable'; }
+}
+
+function showDetail(id) {
+  const el = $('#detail');
+  const seg = T.answer.segments.find((s) => s.id === id);
+  const n = ix.get(id);
+  if (seg) {
+    const sv = (T.verification?.segments || []).find((s) => s.id === id) || { issues: [], tal: '?' };
+    const runs = (T.workflow_runs || []).flatMap((r) => (seg.bindings || []).map((b) => `${b} = ${JSON.stringify(r.bindings?.[b])}`));
+    el.innerHTML = `<div><h2>Answer sentence</h2><h3>${esc(seg.text)}</h3>
+      <dl><dt>Support</dt><dd>${esc(seg.kind)}</dd><dt>Assurance</dt><dd><span class="tal tal-${sv.tal}">TAL ${sv.tal}</span></dd>
+      <dt>Cites</dt><dd class="mono">${esc((seg.claims || []).join(', ') || 'nothing')}</dd>
+      ${runs.length ? `<dt>Bindings</dt><dd class="mono">${esc(runs.join(' · '))}</dd>` : ''}
+      <dt>Experts</dt><dd>${esc((sv.experts || []).map((x) => ix.get(x)?.name ?? x).join(', ') || 'none')}</dd></dl></div>
+      <div><h2>Verifier</h2>${sv.issues.length ? sv.issues.map((i) => `<div class="note ${i.level === 'error' ? 'bad' : ''}"><b>${esc(i.code)}</b> ${esc(i.msg)}</div>`).join('') : '<p>All deterministic checks passed: ids exist, claims are eligible, numbers are grounded, evidence hashes verify.</p>'}</div>`;
+    return;
+  }
+  if (!n) { el.innerHTML = `<div><h2>Unknown id</h2><h3 class="mono">${esc(id)}</h3><p>This id does not exist in the graph. The verifier marks any sentence citing it as unsupported (TAL 0).</p></div><div></div>`; return; }
+  if (n._k === 'claims') {
+    const sp = ix.get(n.evidence?.[0]);
+    el.innerHTML = `<div><h2>${esc(n.type)} claim</h2><h3>${esc(n.statement)}</h3>
+      <dl><dt>Id</dt><dd class="mono">${esc(n.id)}</dd><dt>Status</dt><dd><span class="pill st-${esc(n.status)}">${esc(n.status)}</span></dd>
+      ${n.condition ? `<dt>Condition</dt><dd class="mono">${esc(n.condition)}</dd>` : ''}
+      ${n.confidence !== undefined ? `<dt>Confidence</dt><dd>${pct(n.confidence)}</dd>` : ''}
+      <dt>Said by</dt><dd>${esc(ix.get(n.attributed_to)?.name ?? n.attributed_to)}</dd>
+      <dt>Confirmed by</dt><dd>${esc((n.confirmed_by || []).map((x) => ix.get(x)?.name ?? x).join(', ') || 'not yet')}</dd>
+      ${n.exception_to?.length ? `<dt>Exception to</dt><dd class="mono">${esc(n.exception_to.join(', '))}</dd>` : ''}
+      ${n.conflicts_with?.length ? `<dt>Conflicts with</dt><dd>${esc(n.conflicts_with.map((r) => ix.get(r)?.label ?? r).join(', '))}</dd>` : ''}</dl>
+      ${n.review_note ? `<div class="note ${n.status === 'blocked' ? 'bad' : ''}">${esc(n.review_note)}</div>` : ''}</div>
+      <div id="evbox">${sp ? evidenceHtml(sp) : '<p>No evidence span.</p>'}</div>`;
+    if (sp) hashLine(sp);
+    return;
+  }
+  if (n._k === 'spans') { el.innerHTML = `<div><h2>Evidence span</h2><h3>“${esc(n.quote)}”</h3><dl><dt>Id</dt><dd class="mono">${esc(n.id)}</dd><dt>Offsets</dt><dd class="mono">${n.start}–${n.end}</dd><dt>Source</dt><dd>${esc(ix.get(n.source)?.title ?? n.source)}</dd></dl></div><div>${evidenceHtml(n)}</div>`; hashLine(n); return; }
+  if (n._k === 'concepts') { el.innerHTML = `<div><h2>Concept</h2><h3>${esc(n.label)}</h3><dl><dt>Id</dt><dd class="mono">${esc(n.id)}</dd>${n.notation?.length ? `<dt>Notation</dt><dd class="mono">${esc(n.notation.join(', '))}</dd>` : ''}<dt>Also called</dt><dd>${esc((n.alt_labels || []).join(', ') || '–')}</dd>${n.unit ? `<dt>Unit</dt><dd>${esc(n.unit)}</dd>` : ''}</dl></div><div><h2>Definition</h2><p>${esc(n.definition)}</p><p class="meta">Concepts double as the dictionary. Retrieval seeds from any of these labels appearing in the question.</p></div>`; return; }
+  if (n._k === 'steps') { el.innerHTML = `<div><h2>Workflow step</h2><h3>${esc(n.label)}</h3><dl><dt>Id</dt><dd class="mono">${esc(n.id)}</dd><dt>Workflow</dt><dd>${esc(n._wf)}</dd><dt>Implements</dt><dd class="mono">${esc((n.implements || []).join(', '))}</dd></dl></div><div><p>Because every step names the claims it implements, a workflow run is already a citation path. Computed sentences must trace to an executed step.</p></div>`; return; }
+  if (n._k === 'regulations') { el.innerHTML = `<div><h2>Regulation</h2><h3>${esc(n.label)}</h3><dl><dt>Citation</dt><dd class="mono">${esc(n.citation)}</dd><dt>Jurisdiction</dt><dd>${esc(n.jurisdiction)}</dd></dl></div><div><p>${esc(n.description)}</p>${n.source_url ? `<p><a href="${esc(n.source_url)}" target="_blank" rel="noopener">Read the source</a></p>` : ''}</div>`; return; }
+  if (n._k === 'experts') { const own = (G.claims || []).filter((c) => c.attributed_to === n.id); el.innerHTML = `<div><h2>Expert</h2><h3>${esc(n.name)}</h3><dl><dt>Role</dt><dd>${esc(n.role)}</dd><dt>Experience</dt><dd>${n.years_experience} years</dd><dt>Claims</dt><dd>${own.length} (${own.filter((c) => c.status === 'blocked').length} blocked)</dd><dt>Credit here</dt><dd>${T.verification?.expert_credit?.[n.id] !== undefined ? pct(T.verification.expert_credit[n.id]) : '0%'}</dd></dl></div><div><p>Credit for each grounded sentence is split across the experts behind its claims. Summed over answers, this is the basis for knowledge royalties.</p></div>`; return; }
+  if (n._k === 'sessions') { el.innerHTML = `<div><h2>Elicitation session</h2><h3>${esc((n.method || []).join(', '))} interview</h3><dl><dt>Id</dt><dd class="mono">${esc(n.id)}</dd><dt>Date</dt><dd>${esc(n.date)}</dd><dt>Duration</dt><dd>${n.duration_min} min</dd><dt>Expert</dt><dd>${esc(ix.get(n.expert)?.name)}</dd></dl></div><div></div>`; return; }
+}
+
+function evidenceHtml(sp) {
+  const src = ix.get(sp.source);
+  if (!src?.text) return `<h2>Evidence</h2><p>Source text is held privately. Span hash: <span class="mono">${esc(sp.sha256)}</span></p>`;
+  const a = Math.max(0, sp.start - 220), b = Math.min(src.text.length, sp.end + 220);
+  const ctx = `${a > 0 ? '…' : ''}${esc(src.text.slice(a, sp.start))}<mark>${esc(src.text.slice(sp.start, sp.end))}</mark>${esc(src.text.slice(sp.end, b))}${b < src.text.length ? '…' : ''}`;
+  return `<h2>In the transcript</h2><div class="hash mono" id="hashline">sha256 ${esc(sp.sha256.slice(0, 16))}… <span class="pill">checking</span></div><pre class="transcript">${ctx}</pre>`;
+}
+
+async function hashLine(sp) {
+  const src = ix.get(sp.source);
+  if (!src?.text) return;
+  const r = await verifyHash(src.text.slice(sp.start, sp.end), sp.sha256);
+  const line = document.getElementById('hashline');
+  if (!line) return;
+  const label = { match: 'hash matches source text', mismatch: 'hash mismatch: text was altered', unavailable: 'hash check unavailable here' }[r];
+  line.innerHTML = `sha256 ${esc(sp.sha256.slice(0, 16))}… <span class="pill ${r === 'mismatch' ? 'err' : ''}">${label}</span>`;
+}
+
+function readFile(input) {
+  return new Promise((res, rej) => { const f = input.files?.[0]; if (!f) return res(null); const r = new FileReader(); r.onload = () => { try { res(JSON.parse(r.result)); } catch (e) { rej(new Error(`${f.name} is not valid JSON`)); } }; r.readAsText(f); });
+}
+async function onLoad() {
+  const msg = $('#loadMsg'); msg.textContent = '';
+  try {
+    const g = await readFile($('#fGraph')), t = await readFile($('#fTrace'));
+    if (g) G = g;
+    if (t) { if (!t.answer?.segments) throw new Error('Trace has no answer.segments. Run cli.mjs verify first.'); T = t; }
+    selected = null; render();
+  } catch (e) { msg.textContent = e.message; }
+}
+$('#fGraph').addEventListener('change', onLoad);
+$('#fTrace').addEventListener('change', onLoad);
+let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => selected && select(selected), 120); });
+render();
+if (document.fonts?.ready) document.fonts.ready.then(() => selected && select(selected));
+</script>
