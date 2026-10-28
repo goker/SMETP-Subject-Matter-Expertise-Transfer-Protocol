@@ -1,9 +1,11 @@
 # SMETP Improvements & Enhancement Roadmap
 
+> **October 2026:** Accuracy and speed figures in the examples below were never measured. They have been removed or replaced with a pointer to the only published run: [`docs/benchmarks/2026-10-credit-risk.md`](docs/benchmarks/2026-10-credit-risk.md). Folder trees in this file are proposals. They are not directories in the repo. There are no published npm packages and no drop-in chat adapters.
+
 ## Core Improvements (Immediate)
 
 ### 1. **Benchmarking Framework**
-**Problem**: How do we prove SMETP beats Claude/ChatGPT?
+**Problem**: How do we measure a captured skill against a plain LLM on the same cases?
 
 **Solution**: Standardized benchmarking approach
 - Define baseline: Plain Claude on same inputs
@@ -11,14 +13,7 @@
 - Report: Side-by-side comparison metrics
 - Public: Publish benchmarks for each domain
 
-**Example**:
-```
-Credit Risk Assessment Benchmark:
-- SMETP Accuracy: 94% | Claude: 72%
-- SMETP Speed: <100ms | Claude: 2000ms
-- SMETP Confidence: Well-calibrated | Claude: Always ~50%
-- SMETP Auditable: Full decision path | Claude: Black box
-```
+**What exists:** the October 2026 synthetic credit-risk run (plain LLM, LLM plus the expert docs, hybrid, graph only). Read that report before adding another comparison. The frozen harness is in [`benchmarks/2026-10-credit-risk/`](benchmarks/2026-10-credit-risk/README.md).
 
 ### 2. **Edge Case Catalog**
 **Problem**: Each domain has recurring edge cases that break simple logic
@@ -81,37 +76,14 @@ Each version includes:
 ```
 
 ### 5. **Integration Patterns**
-**Problem**: How do SMEs actually deploy skills?
+**Problem**: How does a skill actually run?
 
-**Solution**: Reference implementations
-```
-/integrations/
-├── claude_tools/
-│   ├── credit_risk_assessment.json
-│   └── example_deployment.py
-├── openai_functions/
-│   ├── credit_risk_assessment.json
-│   └── example_deployment.py
-├── anthropic_tools/
-├── typescript/
-├── python/
-└── REST_API/
-```
+**Status**: not shipped. This repo has no `/integrations/` tree and no drop-in adapter for a chat product or MCP host. A draft Agent Skills file for the credit-risk example is `examples/credit-risk/SKILL.md` (example only). The roadmap is a validator, a compiler, and an MCP server with `decide` / `explain` / `validate`.
 
 ### 6. **Comparative Analysis Framework**
 **Problem**: How do we show SMETP is better than alternatives?
 
-**Solution**: Comparison matrix
-```
-Feature | SMETP | Fine-tuning | RAG | Plain LLM
---------|-------|-------------|-----|----------
-Accuracy | 94% | 85% | 75% | 72%
-Determinism | ✓ | ~ | ~ | ✗
-Edge Cases | ✓ | ~ | ~ | ✗
-Auditable | ✓ | ✗ | ✓ | ✗
-Speed | <100ms | 1000ms | 2000ms | 2000ms
-Cost | One-time | $$$ | API costs | API costs
-```
+**Status**: the only published comparison is the October 2026 credit-risk table (plain LLM, LLM with the expert docs in the prompt, hybrid, graph only). Fine-tuning was not measured. Do not add a matrix of unpublished percentages.
 
 ---
 
@@ -187,19 +159,8 @@ For SMEs selling skills:
 ```
 
 ### 13. **SME Skill Comparison Tool**
-```
-"Your skill vs peers:"
-- Your accuracy: 94%
-- Domain average: 89%
-- Top performer: 96%
 
-Your edge cases: 15
-Domain average: 11
-
-Opportunities to improve:
-- Add self-employed logic (2 others have)
-- Bankruptcy handling (3 others have)
-```
+Not measured. There is no peer accuracy ranking in this repo. Do not invent one.
 
 ---
 
@@ -222,17 +183,8 @@ Opportunities to improve:
 ## Community Improvements
 
 ### 16. **Certification Program**
-```
-"SMETP Practitioner" certification:
-- Level 1: Extract a basic skill (90%+ accuracy)
-- Level 2: Extract in advanced domain (95%+ accuracy)
-- Level 3: Create new domain guidance
 
-Benefits:
-- Credential for SMEs
-- Listing in marketplace
-- Revenue sharing increase
-```
+There is no certification, marketplace listing, or revenue share. Do not describe one as if it exists. A future program would need its own measured benchmark, not a percentage written into a roadmap sketch.
 
 ### 17. **Domain Communities**
 - Finance: Credit experts sharing skills

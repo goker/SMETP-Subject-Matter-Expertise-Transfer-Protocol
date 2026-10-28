@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 370" width="1100" height="370" role="img" aria-labelledby="t d">
+  <title id="t">The SMETP hybrid: the LLM reads, the expert's graph decides, unknowns go to a person</title>
+  <desc id="d">Input (application fields or free-text notes) goes to an LLM that only extracts fields, then a schema guard that checks required fields, types and ranges, then the SMETP graph, which walks the expert's rules deterministically. The graph returns a decision and tier with the exact rule path, or ESCALATE to a person with the reason.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#6B5A4E"/>
+    </marker>
+  </defs>
+
+  <rect width="1100" height="370" rx="18" fill="#FAF5EC"/>
+
+  <text x="30" y="48" font-family="Georgia, 'Times New Roman', serif" font-size="25" font-weight="700" fill="#2A1E17">The hybrid: the LLM reads, the expert's graph decides, unknowns go to a person</text>
+
+  <g font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" text-anchor="middle">
+    <rect x="30" y="90" width="180" height="160" rx="12" fill="#EADFCF"/>
+    <text x="120" y="138" font-size="21" font-weight="700" fill="#2A1E17">Input</text>
+    <text x="120" y="172" font-size="15" fill="#2A1E17">application fields</text>
+    <text x="120" y="193" font-size="15" fill="#2A1E17">or free-text notes</text>
+    <text x="120" y="228" font-size="13" font-style="italic" fill="#6B5A4E">emails, PDFs: not yet tested</text>
+
+    <rect x="240" y="90" width="180" height="160" rx="12" fill="#B5602D"/>
+    <text x="330" y="138" font-size="21" font-weight="700" fill="#FFFFFF">LLM reads</text>
+    <text x="330" y="172" font-size="15" fill="#FFF4E8">extracts fields only;</text>
+    <text x="330" y="193" font-size="15" fill="#FFF4E8">omits what's missing,</text>
+    <text x="330" y="214" font-size="15" fill="#FFF4E8">never guesses</text>
+
+    <rect x="450" y="90" width="180" height="160" rx="12" fill="#EADFCF"/>
+    <text x="540" y="138" font-size="21" font-weight="700" fill="#2A1E17">Schema guard</text>
+    <text x="540" y="172" font-size="15" fill="#2A1E17">required fields,</text>
+    <text x="540" y="193" font-size="15" fill="#2A1E17">types and ranges;</text>
+    <text x="540" y="214" font-size="15" fill="#2A1E17">free text ignored</text>
+
+    <rect x="660" y="90" width="180" height="160" rx="12" fill="#2A1E17"/>
+    <text x="750" y="138" font-size="21" font-weight="700" fill="#FFFFFF">SMETP graph</text>
+    <text x="750" y="172" font-size="15" fill="#F3E9DA">deterministic walk</text>
+    <text x="750" y="193" font-size="15" fill="#F3E9DA">of the expert's</text>
+    <text x="750" y="214" font-size="15" fill="#F3E9DA">decision tree</text>
+
+    <rect x="890" y="72" width="180" height="104" rx="12" fill="#F0B43C"/>
+    <text x="980" y="112" font-size="20" font-weight="700" fill="#2A1E17">Decision + tier</text>
+    <text x="980" y="142" font-size="15" fill="#2A1E17">with the exact</text>
+    <text x="980" y="162" font-size="15" fill="#2A1E17">rule path</text>
+
+    <rect x="891" y="207" width="178" height="102" rx="12" fill="#FFFFFF" stroke="#2A1E17" stroke-width="2"/>
+    <text x="980" y="247" font-size="20" font-weight="700" fill="#2A1E17">ESCALATE</text>
+    <text x="980" y="277" font-size="15" fill="#2A1E17">to a person,</text>
+    <text x="980" y="297" font-size="15" fill="#2A1E17">with the reason</text>
+  </g>
+
+  <g stroke="#6B5A4E" stroke-width="2.5" fill="none" marker-end="url(#arrow)">
+    <line x1="212" y1="170" x2="236" y2="170"/>
+    <line x1="422" y1="170" x2="446" y2="170"/>
+    <line x1="632" y1="170" x2="656" y2="170"/>
+    <line x1="842" y1="160" x2="884" y2="126"/>
+    <line x1="842" y1="180" x2="884" y2="256"/>
+  </g>
+
+  <text x="30" y="345" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" fill="#6B5A4E">Oct 2026 synthetic run: input was free-text renderings of structured fields. A raw-type check before the LLM is planned (issue #10).</text>
+</svg>

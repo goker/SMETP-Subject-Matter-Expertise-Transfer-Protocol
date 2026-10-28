@@ -8,12 +8,14 @@ We welcome contributions from researchers, practitioners, and domain experts!
 
 **For SMEs**: Extract your knowledge as a skill document
 
-1. Go to https://ieataiforbreakfast.com
+1. Follow [`GETTING_STARTED.md`](GETTING_STARTED.md) and the interview template for your domain. That is the path this repo supports.
 2. Choose your domain and role
 3. Answer the interview questions
-4. Generate your skill document
-5. Validate against historical data
-6. Submit to `/examples` folder
+4. Write the skill document by hand (JSON, same shape as the examples)
+5. Compare it to cases you can share. Do not invent an accuracy figure.
+6. Submit to `/examples` folder, and read [`examples/README.md`](examples/README.md) first
+
+A browser interview on another site is optional. It was not verified as part of the docs in this repo, and this repo does not export the result to a chat product.
 
 **Format**: Name it `domain_skillname.json`
 
@@ -82,10 +84,11 @@ Help automate the SMETP process!
 ### Submission Standards
 
 **For Skills**:
-- Validated against 50+ historical cases
-- Accuracy >= 90%
-- Confidence well-calibrated
+- Inputs, decision tree, outcomes, and escalation are explicit
+- Published test cases match the tree, or the mismatch is called out in the PR
+- No accuracy percentage unless a write-up under `docs/benchmarks/` states the method and the caveats
 - Clear edge cases documented
+- No claim that the file is an npm package or a drop-in adapter for a chat product
 
 **For Documentation**:
 - Clear and concise writing
@@ -121,12 +124,13 @@ Help automate the SMETP process!
 - [ ] Cybersecurity domain skills (threat detection, incident response)
 - [ ] Case studies documenting SMETP implementation
 - [ ] Video tutorials explaining the framework
-- [ ] Integration with popular LLM platforms
+- [x] A public benchmark harness for the October 2026 credit-risk run: [`benchmarks/2026-10-credit-risk/`](benchmarks/2026-10-credit-risk/README.md)
+- [ ] A JSON Schema validator and (later) an MCP server. Neither is shipped. Adapters for individual chat products are not shipped.
 
 ## Questions?
 
-- **GitHub Issues**: Ask questions, suggest improvements
-- **Discussions**: Join community conversations
+- **GitHub Issues**: Ask questions, suggest improvements. Use the issue templates.
+- **Discussions**: Not enabled on this repo yet. Draft posts are in [`docs/benchmarks/discussions-draft.md`](docs/benchmarks/discussions-draft.md).
 - **Email**: contact@ieataiforbreakfast.com
 
 ---

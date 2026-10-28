@@ -1,0 +1,62 @@
+{
+ "kg": {
+  "decision_acc": 1.0,
+  "decision+tier_acc": 1.0,
+  "consistency_1runs": 1.0,
+  "overreach_on_escalate_cases": 0.0,
+  "adversarial_acc": 1.0,
+  "citation_rate": 1.0,
+  "median_latency_ms": 0.008019997039809823,
+  "tokens_per_call": 0.0,
+  "cost_usd_total": 0.0,
+  "billed_cost_usd_xai": 0.0
+ },
+ "llm_plain": {
+  "decision_acc": 0.302158273381295,
+  "decision+tier_acc": 0.28776978417266186,
+  "consistency_1runs": 1.0,
+  "overreach_on_escalate_cases": 0.06451612903225806,
+  "adversarial_acc": 0.3125,
+  "citation_rate": 0.03597122302158273,
+  "median_latency_ms": 8669.24262046814,
+  "tokens_per_call": 2265.748201438849,
+  "cost_usd_total": 0.0,
+  "billed_cost_usd_xai": 0.870274,
+  "runs_per_case": 1,
+  "model": "grok-4.7"
+ },
+ "llm_rag": {
+  "decision_acc": 0.9712230215827338,
+  "decision+tier_acc": 0.9712230215827338,
+  "consistency_1runs": 1.0,
+  "overreach_on_escalate_cases": 0.12903225806451613,
+  "adversarial_acc": 0.875,
+  "citation_rate": 0.9064748201438849,
+  "median_latency_ms": 16824.515342712402,
+  "tokens_per_call": 6028.654676258992,
+  "cost_usd_total": 0.0,
+  "billed_cost_usd_xai": 2.29255,
+  "runs_per_case": 1,
+  "model": "grok-4.7"
+ },
+ "hybrid": {
+  "decision_acc": 0.9712230215827338,
+  "decision+tier_acc": 0.9712230215827338,
+  "consistency_1runs": 1.0,
+  "overreach_on_escalate_cases": 0.12903225806451613,
+  "adversarial_acc": 0.75,
+  "citation_rate": 1.0,
+  "median_latency_ms": 2472.773790359497,
+  "tokens_per_call": 1644.1294964028777,
+  "cost_usd_total": 0.0,
+  "billed_cost_usd_xai": 0.359988,
+  "runs_per_case": 1,
+  "model": "grok-4.7"
+ },
+ "_notes": {
+  "model": "grok-4.7 via api.x.ai (OpenAI not used)",
+  "runs_per_case": "1 for final run due to $5 budget; llm_plain 3-run consistency from cached runs: 58/97 cases = 59.8%",
+  "total_billed_usd_xai": 4.67,
+  "billed_cost_per_system_is_for_the_reported_1_run": true
+ }
+}

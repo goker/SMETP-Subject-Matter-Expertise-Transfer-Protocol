@@ -1,20 +1,21 @@
 # SMETP Getting Started Guide
 
-Welcome to SMETP! This guide walks you through extracting your expertise into an AI skill that works better than plain Claude, ChatGPT, or Gemini.
+Welcome to SMETP. This guide walks you through interviewing an expert and writing their decision logic down by hand, using the templates in this repo.
+
+Older drafts of this guide cited accuracy and speed figures that were never measured. Those lines have been removed. The only published measurement is the October 2026 synthetic credit-risk benchmark: [`docs/benchmarks/2026-10-credit-risk.md`](docs/benchmarks/2026-10-credit-risk.md). There is no drop-in adapter for Claude, ChatGPT, Gemini, or MCP in this repo, and there are no published npm packages.
 
 ---
 
 ## The 5-Minute Overview
 
-SMETP (Subject Matter Expertise Transfer Protocol) converts your expert knowledge into **deterministic, auditable AI skills** that:
+SMETP (Subject Matter Expertise Transfer Protocol) converts expert knowledge into a **structured decision record** you can validate:
 
-- Beat plain LLMs in accuracy (94% vs 72% on real domains)
-- Are non-probabilistic (same input = same decision every time)
-- Explain their reasoning (compliance & audit-friendly)
-- Handle edge cases explicitly (bankruptcy 7-year rule, self-employed income, etc)
-- Have calibrated confidence (95% certain on textbook cases, 60% on edge cases)
+- Same structured input, same decision, when the rules are explicit
+- A written path you can audit
+- Edge cases written down instead of left implicit
+- Confidence and escalation called out per scenario, when the expert states them
 
-**In 90 minutes of interview + 2 hours of skill building, you'll have a deployable AI agent.**
+**An interview plus write-up produces a skill document you can review.** It does not produce a hosted agent. The measured setup, when you have structured fields, is hybrid: an LLM can parse messy input, and the written rules decide.
 
 ---
 
@@ -130,12 +131,13 @@ After the interview, extract the decision structure:
 
 ### Use the Example Skills as Templates
 
-See `/examples/`:
-- `finance_credit_risk_assessment.json` (94% accuracy)
-- `healthcare_differential_diagnosis.json` (92% accuracy)
-- `legal_contract_risk_assessment.json` (96% accuracy)
+See [`/examples`](examples/README.md):
 
-These show the complete structure you should build for your domain.
+- `finance_credit_risk_assessment.json`
+- `healthcare_differential_diagnosis.json`
+- `legal_contract_risk_assessment.json`
+
+These show the document shape. Accuracy fields inside the JSON are not measurements. Read `examples/README.md` first. The finance file also has known tree/test mismatches tracked as `example-bug` issues.
 
 ---
 
@@ -149,8 +151,7 @@ Create a **Skill Document** in JSON format (see `FRAMEWORK.md` for complete sche
     "domain": "finance",
     "skillName": "credit_risk_assessment",
     "smeName": "Your Name",
-    "smeYearsExperience": 20,
-    "accuracy": 0.94
+    "smeYearsExperience": 20
   },
 
   "inputs": {
@@ -189,8 +190,8 @@ Create a **Skill Document** in JSON format (see `FRAMEWORK.md` for complete sche
   ],
 
   "validation": {
-    "methodology": "Tested against 500+ historical decisions",
-    "accuracy": 0.94
+    "methodology": "Describe the cases you actually compared. Leave accuracy out until a benchmark write-up exists.",
+    "test_cases": []
   }
 }
 ```
@@ -219,90 +220,35 @@ Create a **Skill Document** in JSON format (see `FRAMEWORK.md` for complete sche
    accuracy = correct / len(historical_cases)
    ```
 
-3. **Success criteria**
-   - Accuracy >= 90%
-   - Precision >= 85% (of approvals, % that perform well)
-   - Recall >= 85% (of your approvals, % caught by skill)
-   - Confidence well-calibrated (95% confidence decisions = 95% accuracy)
+3. **What to write down**
+   - Where the tree matches the expert's case
+   - Where it does not (missing field, wrong threshold, a case the tree never checks)
+   - Whether confidence was stated per outcome, or left blank
 
 4. **Fix gaps**
-   - If accuracy < 90%, revise decision tree
+   - Revise the decision tree when a real case disagrees
    - Add missing edge cases
-   - Adjust confidence scores
+   - Adjust confidence only when the expert stated it
 
 ---
 
-## Step 6: Deploy Your Skill
+## Step 6: There is no deploy button in this repo
 
-Your skill works with any LLM:
+This repository does not export a skill to Claude, ChatGPT, Gemini, or MCP. It does not publish npm packages. A hand-written draft of the credit-risk example in Agent Skills shape is [`examples/credit-risk/SKILL.md`](examples/credit-risk/SKILL.md), labeled example-only.
 
-### Supported Platforms
+What you can do today:
 
-- **Claude** (Anthropic)
-- **ChatGPT** (OpenAI)
-- **Gemini** (Google)
-- **LLaMA** (Meta, open-source)
-- **Command** (Cohere)
-- Any REST API LLM
+1. Keep the JSON next to the interview notes.
+2. Walk the decision tree by hand, or write your own runner.
+3. For messy text, parse fields first, then apply the tree (hybrid). Escalate when a field is missing or the tree does not cover the case.
 
-### Deployment Options
-
-#### Option 1: Use in Claude Code (Free)
-```
-1. Upload skill JSON to https://ieataiforbreakfast.com
-2. Export as "Claude tools" format
-3. Use in Claude Code CLI or API
-```
-
-#### Option 2: Deploy as API Endpoint
-```
-1. Convert JSON to TypeScript or Python
-2. Deploy to your cloud (AWS Lambda, Vercel, GCP, etc)
-3. Call via REST API
-```
-
-#### Option 3: Sell in Marketplace (Revenue Share)
-```
-1. Upload to https://ieataiforbreakfast.com/marketplace
-2. Set pricing
-3. Earn 70% of sales
-```
+A public validator, a compiler, and an MCP server (`decide` / `explain` / `validate`) are roadmap items. They are not in the tree yet.
 
 ---
 
-## Step 7: Use Your Skill
+## Step 7: Check the record
 
-### In Claude Code
-
-```
-# Load your skill
-> Use your-domain-skill.json
-
-# Ask Claude to use it
-> Make a credit decision for: score 720, DTI 0.42, employment 4 years
-
-> The skill returns:
-> Decision: APPROVE
-> Tier: STANDARD
-> Confidence: 92%
-> Reason: Meets all standard criteria
-```
-
-### In Your Application
-
-Call the API:
-```python
-import requests
-
-decision = requests.post('https://your-api.com/skill/credit', {
-  'credit_score': 720,
-  'debt_to_income': 0.42,
-  'employment_years': 4
-})
-
-print(decision.decision)  # APPROVE
-print(decision.confidence)  # 0.92
-```
+Walk one case through the tree and write down the node path, the decision, and whether the expert would escalate. That path is the artifact. Do not paste the JSON into a chat product and treat the reply as the skill running.
 
 ---
 
@@ -312,7 +258,7 @@ print(decision.confidence)  # 0.92
 
 - Log actual decisions and outcomes
 - Calculate actual accuracy on live data
-- Compare to benchmark (vs plain Claude, vs your manual accuracy)
+- Compare later runs to the published benchmark method ([`docs/benchmarks/2026-10-credit-risk.md`](docs/benchmarks/2026-10-credit-risk.md)), not to unpublished draft figures
 
 ### Iterate
 
@@ -340,15 +286,14 @@ Create `finance_credit_skill.json` with:
 - Heuristics: 15+ years employment +10%, 3+ inquiries -15%
 - Edge cases: bankruptcy 7-year rule, self-employed 2-year average
 
-### Validate (30 min)
-- Run against 100 past decisions
-- Get 94% accuracy
-- Confidence: 95% on straightforward cases, 70% on borderline
+### Validate
+- Compare the written tree to cases the expert already decided
+- Record disagreements as issues or as tree edits
+- Do not fill in an accuracy percentage unless you have a written method, like the October 2026 credit-risk benchmark
 
-### Deploy (15 min)
-- Export to Claude tools format
-- Upload to ieataiforbreakfast.com
-- Ready to use!
+### Run it
+- Walk the tree, or wait for a published runner
+- This repo does not upload or export the skill for you
 
 ---
 
@@ -356,19 +301,22 @@ Create `finance_credit_skill.json` with:
 
 ### Q: What if I don't have 10+ years of experience?
 
-A: SMETP works better with deep expertise (10+ years). If you have 5-7 years but strong track record, you can try, but accuracy may be lower (80-85%). We recommend waiting until you have more experience.
+A: The templates assume you can state thresholds and exceptions from real work. Shorter experience just means the capture will be thinner. Write down what you actually do, and mark what you would escalate.
 
 ### Q: Can I extract skills for decision-making outside my primary domain?
 
 A: No. Stick to your domain of expertise. A credit analyst shouldn't extract a medical diagnosis skill.
 
-### Q: What if my skill only gets 75% accuracy?
+### Q: What if the tree disagrees with the expert's old cases?
 
-A: That means your decision process isn't fully captured. Common fixes:
-- Add missing edge cases
-- Refine decision tree thresholds
-- Identify heuristics you weren't consciously using
-- Re-interview yourself with domain template
+A: The decision process is not fully captured, or the old case and the tree are answering different questions. Common fixes:
+
+- Add the missing edge case
+- Refine a threshold
+- Write down a heuristic you were not applying in the tree
+- Re-interview with the domain template
+
+The finance example already has this kind of mismatch. It is tracked in `example-bug` issues rather than hidden.
 
 ### Q: How often should I update my skill?
 
@@ -380,12 +328,9 @@ A: Version it!
 
 Update when accuracy drops or new patterns emerge.
 
-### Q: Can I make money from my skill?
+### Q: Can I sell a skill from this repo?
 
-A: Yes! Upload to marketplace at https://ieataiforbreakfast.com:
-- Set your own price
-- Earn 70% of sales (we keep 30%)
-- High-value skills ($50-200) sell best
+A: This repository has no marketplace and no payout split. The license on SMETP itself is MIT. Your own interview notes are yours to keep private.
 
 ### Q: Is my skill proprietary? Can I use it internally only?
 
@@ -420,15 +365,15 @@ Perfect for regulated industries (finance, healthcare, legal).
 
 ### Medium-term
 
-1. **Deploy** — Export and use in Claude/OpenAI/Gemini
+1. **Decide how it will run** — by hand, your own code, or a future published runner. Adapters are not shipped.
 2. **Monitor** — Track real accuracy on live data
 3. **Iterate** — Add edge cases and improve accuracy
 4. **Version** — Bump version number as you improve
 
 ### Long-term
 
-1. **Sell** — Upload to marketplace, earn revenue
-2. **Open-source** — Contribute to SMETP community
+1. **Share** — Open a domain-request or a redacted capture once Discussions exist (drafts are in `docs/benchmarks/discussions-draft.md`)
+2. **Open-source** — Contribute to the SMETP community
 3. **Build team** — Extract skills from other experts in your domain
 4. **Dominate** — Become known as the person who automated expert decision-making in your field
 
@@ -438,7 +383,7 @@ Perfect for regulated industries (finance, healthcare, legal).
 
 - **Framework**: See `FRAMEWORK.md` for complete technical details
 - **Interview Templates**: See `/templates/` for your domain
-- **Example Skills**: See `/examples/` for production-quality reference implementations
+- **Example Skills**: See `/examples/` for worked JSON. They are examples, not measured production skills.
 - **Improvements**: See `IMPROVEMENTS.md` for roadmap and inspiration
 - **Contributing**: See `CONTRIBUTING.md` to share your skill or help the community
 
@@ -452,12 +397,12 @@ Perfect for regulated industries (finance, healthcare, legal).
 4. Look at example skill — Study `/examples/finance_credit_risk_assessment.json` or comparable domain
 5. Schedule your interview — 60-90 min to extract your expertise
 6. Build your skill — 2-3 hours to codify and validate
-7. Deploy — 15 min to export and start using
+7. Review the tree against a handful of past cases, and file mismatches
 
-**Expected result**: A deterministic AI agent that beats plain Claude by 20+ percentage points and is fully auditable for compliance.
+**Expected result**: a written decision record with an audit path. Quote the October 2026 benchmark only with its caveats (synthetic, one domain, one model, one run per case; graph-only agreement is by construction).
 
 ---
 
-**Questions?** See [CONTRIBUTING.md](CONTRIBUTING.md) for community resources or contact us at contact@ieataiforbreakfast.com
+**Questions?** See [CONTRIBUTING.md](CONTRIBUTING.md) or open a GitHub Issue. Email: contact@ieataiforbreakfast.com
 
-**Ready?** Visit https://ieataiforbreakfast.com to start extracting your expertise now.
+Start from the templates in this repo. A browser capture on another site is optional and was not verified for this guide.

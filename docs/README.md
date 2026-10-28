@@ -5,13 +5,19 @@
 | Document | Description |
 | -------- | ----------- |
 | [FRAMEWORK.md](../FRAMEWORK.md) | Full SMETP methodology |
-| [GETTING_STARTED.md](../GETTING_STARTED.md) | Onboarding |
+| [GETTING_STARTED.md](../GETTING_STARTED.md) | Onboarding, by hand |
 | [CONTRIBUTING.md](../CONTRIBUTING.md) | How to contribute |
-| [IMPROVEMENTS.md](../IMPROVEMENTS.md) | Roadmap and improvements |
+| [IMPROVEMENTS.md](../IMPROVEMENTS.md) | Roadmap notes (older drafts; see the benchmark before quoting a number) |
+| [benchmarks/2026-10-credit-risk.md](./benchmarks/2026-10-credit-risk.md) | October 2026 synthetic credit-risk benchmark (the only published numbers) |
+| [benchmarks/2026-10-credit-risk-methods.md](./benchmarks/2026-10-credit-risk-methods.md) | Methods companion: construct, metrics, application, miss analysis, claims |
+| [../benchmarks/2026-10-credit-risk/](../benchmarks/2026-10-credit-risk/README.md) | Frozen harness, cases and scored results with SHA-256 hashes (graph runs offline) |
+| [benchmarks/methodology-review.md](./benchmarks/methodology-review.md) | Three-LLM methodology review: majority "partially" (method and application only; not a re-run) |
+| [presentations/](./presentations/README.md) | October 2026 pitch deck (PDF public copy) and what the repo has updated since |
+| [benchmarks/discussions-draft.md](./benchmarks/discussions-draft.md) | Discussion posts to paste once Discussions are enabled |
 
 ## Reference implementation — operations
 
-The hosted product at [ieataiforbreakfast.com](https://ieataiforbreakfast.com) ships the `@smetp/*` npm packages alongside the Next.js app. The guides below are maintained in that product monorepo and mirrored here so protocol adopters can run, deploy, and publish without hunting through private notes.
+> **Not published (October 2026).** The guides below are a handoff plan mirrored from a product monorepo. This public protocol repo has no `packages/` tree and no published npm packages. It also has no drop-in adapter for Claude, ChatGPT, Gemini, or MCP. Do not treat the commands in those guides as something a clone of this repo can run. The README states the same limit.
 
 | Document | Description |
 | -------- | ----------- |
@@ -19,9 +25,9 @@ The hosted product at [ieataiforbreakfast.com](https://ieataiforbreakfast.com) s
 | [reference-implementation/DEPLOYMENT.md](./reference-implementation/DEPLOYMENT.md) | Vercel CI/CD and operations |
 | [reference-implementation/README_HANDOFF.md](./reference-implementation/README_HANDOFF.md) | Maintainer handoff and architecture pointers |
 | [reference-implementation/ENVIRONMENT.md](./reference-implementation/ENVIRONMENT.md) | Environment variables and where to obtain them |
-| [reference-implementation/PUBLISHING.md](./reference-implementation/PUBLISHING.md) | Publishing `@smetp/*` packages to npm |
-| [reference-implementation/PACKAGES.md](./reference-implementation/PACKAGES.md) | Package roles and dependency graph |
-| [reference-implementation/PACKAGES_MONOREPO_OVERVIEW.md](./reference-implementation/PACKAGES_MONOREPO_OVERVIEW.md) | High-level `@smetp/*` overview |
+| [reference-implementation/PUBLISHING.md](./reference-implementation/PUBLISHING.md) | Handoff notes for a future npm publish (nothing is published) |
+| [reference-implementation/PACKAGES.md](./reference-implementation/PACKAGES.md) | Planned package roles (no package tree in this repo) |
+| [reference-implementation/PACKAGES_MONOREPO_OVERVIEW.md](./reference-implementation/PACKAGES_MONOREPO_OVERVIEW.md) | Planned package overview (not a release) |
 | [reference-implementation/WHY_OPEN.md](./reference-implementation/WHY_OPEN.md) | Why the protocol surface is open source |
 
 To refresh this folder from the product repo, copy the listed files into `docs/reference-implementation/` and open a PR.

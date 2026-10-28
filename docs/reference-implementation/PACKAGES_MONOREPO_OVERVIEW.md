@@ -1,5 +1,7 @@
 # SMETP open-source packages
 
+> **Not in this repo (October 2026).** The table below is a plan copied from a product monorepo. Status "alpha" does not mean a release. `npm install` and `npx` commands on this page will not work from a clone of the public protocol repo. There is no package tree here.
+
 This folder contains the open-source pieces of the **Subject Matter
 Expertise Transfer Protocol** (SMETP) — the methodology and tooling that
 power [ieataiforbreakfast.com](https://ieataiforbreakfast.com).
