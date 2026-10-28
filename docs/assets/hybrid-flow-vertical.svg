@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 830" width="480" height="830" role="img" aria-labelledby="t d">
+  <title id="t">The SMETP hybrid: the LLM reads, the expert's graph decides, unknowns go to a person</title>
+  <desc id="d">Input (application fields or free-text notes) goes to an LLM that only extracts fields, then a schema guard that checks required fields, types and ranges, then the SMETP graph, which walks the expert's rules deterministically. The graph returns a decision and tier with the exact rule path, or ESCALATE to a person with the reason.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#6B5A4E"/>
+    </marker>
+  </defs>
+
+  <rect width="480" height="830" rx="18" fill="#FAF5EC"/>
+
+  <g font-family="Georgia, 'Times New Roman', serif" font-size="23" font-weight="700" fill="#2A1E17">
+    <text x="30" y="46">The hybrid: the LLM reads,</text>
+    <text x="30" y="76">the expert's graph decides,</text>
+    <text x="30" y="106">unknowns go to a person</text>
+  </g>
+
+  <g font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" text-anchor="middle">
+    <rect x="30" y="130" width="420" height="96" rx="12" fill="#EADFCF"/>
+    <text x="240" y="166" font-size="21" font-weight="700" fill="#2A1E17">Input</text>
+    <text x="240" y="192" font-size="15" fill="#2A1E17">application fields or free-text notes</text>
+    <text x="240" y="212" font-size="13" font-style="italic" fill="#6B5A4E">emails, PDFs: not yet tested</text>
+
+    <rect x="30" y="260" width="420" height="96" rx="12" fill="#B5602D"/>
+    <text x="240" y="296" font-size="21" font-weight="700" fill="#FFFFFF">LLM reads</text>
+    <text x="240" y="322" font-size="15" fill="#FFF4E8">extracts fields only;</text>
+    <text x="240" y="342" font-size="15" fill="#FFF4E8">omits what's missing, never guesses</text>
+
+    <rect x="30" y="390" width="420" height="96" rx="12" fill="#EADFCF"/>
+    <text x="240" y="426" font-size="21" font-weight="700" fill="#2A1E17">Schema guard</text>
+    <text x="240" y="452" font-size="15" fill="#2A1E17">required fields, types and ranges;</text>
+    <text x="240" y="472" font-size="15" fill="#2A1E17">free text ignored</text>
+
+    <rect x="30" y="520" width="420" height="96" rx="12" fill="#2A1E17"/>
+    <text x="240" y="556" font-size="21" font-weight="700" fill="#FFFFFF">SMETP graph</text>
+    <text x="240" y="582" font-size="15" fill="#F3E9DA">deterministic walk of the</text>
+    <text x="240" y="602" font-size="15" fill="#F3E9DA">expert's decision tree</text>
+
+    <rect x="30" y="660" width="200" height="100" rx="12" fill="#F0B43C"/>
+    <text x="130" y="698" font-size="19" font-weight="700" fill="#2A1E17">Decision + tier</text>
+    <text x="130" y="724" font-size="15" fill="#2A1E17">with the exact</text>
+    <text x="130" y="744" font-size="15" fill="#2A1E17">rule path</text>
+
+    <rect x="251" y="661" width="198" height="98" rx="12" fill="#FFFFFF" stroke="#2A1E17" stroke-width="2"/>
+    <text x="350" y="698" font-size="19" font-weight="700" fill="#2A1E17">ESCALATE</text>
+    <text x="350" y="724" font-size="15" fill="#2A1E17">to a person,</text>
+    <text x="350" y="744" font-size="15" fill="#2A1E17">with the reason</text>
+  </g>
+
+  <g stroke="#6B5A4E" stroke-width="2.5" fill="none" marker-end="url(#arrow)">
+    <line x1="240" y1="228" x2="240" y2="255"/>
+    <line x1="240" y1="358" x2="240" y2="385"/>
+    <line x1="240" y1="488" x2="240" y2="515"/>
+    <line x1="225" y1="618" x2="150" y2="655"/>
+    <line x1="255" y1="618" x2="330" y2="655"/>
+  </g>
+
+  <g font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" fill="#6B5A4E">
+    <text x="30" y="792">Oct 2026 synthetic run: input was free-text renderings</text>
+    <text x="30" y="812">of structured fields. Raw-type check planned (issue #10).</text>
+  </g>
+</svg>
