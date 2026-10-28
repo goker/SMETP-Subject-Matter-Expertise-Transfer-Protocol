@@ -13,7 +13,7 @@
 - Report: Side-by-side comparison metrics
 - Public: Publish benchmarks for each domain
 
-**What exists:** the October 2026 synthetic credit-risk run (plain LLM, LLM plus the expert docs, hybrid, graph only). Read that report before adding another comparison. The harness is not public yet.
+**What exists:** the October 2026 synthetic credit-risk run (plain LLM, LLM plus the expert docs, hybrid, graph only). Read that report before adding another comparison. The frozen harness is in [`benchmarks/2026-10-credit-risk/`](benchmarks/2026-10-credit-risk/README.md).
 
 ### 2. **Edge Case Catalog**
 **Problem**: Each domain has recurring edge cases that break simple logic

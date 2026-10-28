@@ -22,15 +22,18 @@ On 139 synthetic credit-risk cases built from [`examples/finance_credit_risk_ass
 
 | Setup | Decision accuracy | Rule citation | Median latency | Cost (139) |
 |---|---|---|---|---|
-| Plain LLM | 30.2% | 3.6% | 8.7 s | $0.87 |
+| Plain LLM (no-policy control) | 30.2% | 3.6% | 8.7 s | $0.87 |
 | LLM + expert docs in prompt | 97.1% | 90.6% | 16.8 s | $2.29 |
 | **Hybrid: LLM parses, SMETP graph decides** | **97.1%** | **100%** | **2.5 s** | **$0.36** |
 | SMETP graph alone (structured input) | 100%\* | 100% | ~0.008 ms | $0 |
 
-\*By construction — the test answers come from the same rules. It shows faithful capture, not a smarter system.
+\*By construction — the test answers come from an oracle of the same expert tree. It shows faithful capture, not a smarter system.
+Rule citation counts whether a rule was named, not whether it was the right one.
 Caveats: synthetic data, one domain, one model, one run per case. Total spend: $4.67.
 Full report: [October 2026 credit-risk benchmark](docs/benchmarks/2026-10-credit-risk.md)
-Methods: [how the run was designed and applied](docs/benchmarks/2026-10-credit-risk-methods.md). Methodology review: [in progress](docs/benchmarks/methodology-review.md).
+Methods: [how the run was designed and applied](docs/benchmarks/2026-10-credit-risk-methods.md).
+Harness: [`benchmarks/2026-10-credit-risk/`](benchmarks/2026-10-credit-risk/README.md), frozen with SHA-256 hashes. The graph results reproduce offline from a clone, no API key needed.
+Methodology review: [three LLM judges, majority verdict "partially"](docs/benchmarks/methodology-review.md). One judge said industry-standard, only as a synthetic expert-policy evaluation. Not regulated credit-model validation.
 
 Encoding the example as a graph also found bugs in it (2 of 5 published test cases contradict
 the tree; a bankruptcy check never runs at scores of 650+; undeclared fields). Tracked here:
@@ -45,13 +48,12 @@ the tree; a bankruptcy check never runs at scores of 650+; undeclared fields). T
 - [#9](https://github.com/goker/SMETP-Subject-Matter-Expertise-Transfer-Protocol/issues/9) — score 780 with DTI 80%, zero savings, and 5 inquiries is approved PRIME
 
 Benchmark follow-up: [#10](https://github.com/goker/SMETP-Subject-Matter-Expertise-Transfer-Protocol/issues/10).
-Roadmap: [#11](https://github.com/goker/SMETP-Subject-Matter-Expertise-Transfer-Protocol/issues/11) harness, [#12](https://github.com/goker/SMETP-Subject-Matter-Expertise-Transfer-Protocol/issues/12) SKILL.md compiler, [#13](https://github.com/goker/SMETP-Subject-Matter-Expertise-Transfer-Protocol/issues/13) MCP server.
+Roadmap: [#11](https://github.com/goker/SMETP-Subject-Matter-Expertise-Transfer-Protocol/issues/11) harness (published in `benchmarks/2026-10-credit-risk/`), [#12](https://github.com/goker/SMETP-Subject-Matter-Expertise-Transfer-Protocol/issues/12) SKILL.md compiler, [#13](https://github.com/goker/SMETP-Subject-Matter-Expertise-Transfer-Protocol/issues/13) MCP server.
 
-The product stance from that run: **hybrid**. An LLM can read messy input. The expert's rules decide, cite the path, and escalate what the rules do not cover.
+The product stance from that run: **hybrid**. An LLM reads the input. The expert's rules decide, cite the path, and escalate what the rules do not cover. Messy real documents are the intended input. This run did not test them.
 
 ### Not shipped yet (roadmap)
 
-- Public benchmark harness (`benchmarks/`)
 - A JSON Schema + validator for skill files
 - Compile to Agent Skills `SKILL.md` (credit-risk draft is in-repo; no compiler yet)
 - An MCP server exposing `decide` / `explain` / `validate`

@@ -124,7 +124,8 @@ Help automate the SMETP process!
 - [ ] Cybersecurity domain skills (threat detection, incident response)
 - [ ] Case studies documenting SMETP implementation
 - [ ] Video tutorials explaining the framework
-- [ ] A public benchmark harness, a JSON Schema validator, and (later) an MCP server. None of these are shipped. Adapters for individual chat products are not shipped.
+- [x] A public benchmark harness for the October 2026 credit-risk run: [`benchmarks/2026-10-credit-risk/`](benchmarks/2026-10-credit-risk/README.md)
+- [ ] A JSON Schema validator and (later) an MCP server. Neither is shipped. Adapters for individual chat products are not shipped.
 
 ## Questions?
 

@@ -16,15 +16,18 @@ Maintainer note on the site: do not post the ieataiforbreakfast.com capture sent
 
 We ran the finance credit-risk example through four setups on 139 synthetic cases (grok-4.7, one scored run per case).
 
-Headline: the hybrid (LLM extracts fields, the SMETP graph decides) matched an LLM given the expert's docs (97.1%) at $0.36 vs $2.29 for the 139 decisions, 2.5 s vs 16.8 s median, with a rule path on 100% of decisions.
+Headline: on this set, the hybrid (LLM extracts fields, the SMETP graph decides) and an LLM given the expert's docs both reached 97.1% decision accuracy in one run per case. The hybrid cost $0.36 vs $2.29 for the 139 decisions, 2.5 s vs 16.8 s median, and every hybrid decision carried a rule path.
 
 Read before quoting:
 
-- The graph-only 100% is by construction (same rules as the test answers).
-- Synthetic, one domain, one model, one run per case. Gaps like 87.5% vs 75% adversarial accuracy (14 vs 12 of 16) are noise.
-- All 4 hybrid misses: the parser normalized bad input types ("800" as a string) before validation. Fix: validate raw types first.
+- The graph-only 100% is by construction (the oracle encodes the same expert tree).
+- The plain LLM is a no-policy control, not a competitor.
+- Synthetic, one domain, one model, one run per case. Gaps like 87.5% vs 75% adversarial accuracy (14 vs 12 of 16) are not statistically decisive.
+- All 4 hybrid misses: the parser normalized bad input types (`"800"`, `"yes"`) before the graph's type check. Fix: validate raw types first (#10). Not re-measured yet.
 
 Report: [October 2026 credit-risk benchmark](2026-10-credit-risk.md)
+Harness (graph reproduces offline): [`benchmarks/2026-10-credit-risk/`](../../benchmarks/2026-10-credit-risk/README.md)
+Methodology review (three LLM judges, majority "partially"): [methodology-review.md](methodology-review.md)
 
 Questions, critiques, and replication attempts welcome here.
 

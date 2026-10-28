@@ -26,7 +26,7 @@ metadata:
 ## When to use
 
 Use this skill when deciding consumer/loan creditworthiness from **structured** applicant
-features and you need a **citable rule path** plus calibrated **ESCALATE** for out-of-scope
+features and you need a **citable rule path** plus explicit **ESCALATE** for out-of-scope
 inputs. For messy PDFs/emails, parse fields first (hybrid), then apply the tree.
 
 ## Inputs
