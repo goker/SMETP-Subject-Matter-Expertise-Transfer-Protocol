@@ -32,8 +32,19 @@ Caveats: synthetic data, one domain, one model, one run per case. Total spend: $
 Full report: [October 2026 credit-risk benchmark](docs/benchmarks/2026-10-credit-risk.md)
 
 Encoding the example as a graph also found bugs in it (2 of 5 published test cases contradict
-the tree; a bankruptcy check never runs at scores of 650+; undeclared fields). Tracked in Issues
-labeled `example-bug`.
+the tree; a bankruptcy check never runs at scores of 650+; undeclared fields). Tracked here:
+
+- [#14](https://github.com/goker/SMETP-Subject-Matter-Expertise-Transfer-Protocol/issues/14) — published test "bankruptcy 8 years ago, score 700" expects CONDITIONAL/SUBPRIME; the tree returns APPROVE/STANDARD
+- [#3](https://github.com/goker/SMETP-Subject-Matter-Expertise-Transfer-Protocol/issues/3) — published test "self-employed, 3 years" expects CONDITIONAL; the tree returns APPROVE
+- [#4](https://github.com/goker/SMETP-Subject-Matter-Expertise-Transfer-Protocol/issues/4) — `check_recent_bankruptcy` never runs at scores of 650+
+- [#5](https://github.com/goker/SMETP-Subject-Matter-Expertise-Transfer-Protocol/issues/5) — `has_2yr_tax_returns` and `tax_return_trend` are tested but not declared
+- [#6](https://github.com/goker/SMETP-Subject-Matter-Expertise-Transfer-Protocol/issues/6) — reason text on `deny_credit_seeking` and `deny_high_dti` does not match the branch
+- [#7](https://github.com/goker/SMETP-Subject-Matter-Expertise-Transfer-Protocol/issues/7) — DENY and ESCALATE outcomes have no confidence
+- [#8](https://github.com/goker/SMETP-Subject-Matter-Expertise-Transfer-Protocol/issues/8) — five heuristics and six edge cases are prose only
+- [#9](https://github.com/goker/SMETP-Subject-Matter-Expertise-Transfer-Protocol/issues/9) — score 780 with DTI 80%, zero savings, and 5 inquiries is approved PRIME
+
+Benchmark follow-up: [#10](https://github.com/goker/SMETP-Subject-Matter-Expertise-Transfer-Protocol/issues/10).
+Roadmap: [#11](https://github.com/goker/SMETP-Subject-Matter-Expertise-Transfer-Protocol/issues/11) harness, [#12](https://github.com/goker/SMETP-Subject-Matter-Expertise-Transfer-Protocol/issues/12) SKILL.md compiler, [#13](https://github.com/goker/SMETP-Subject-Matter-Expertise-Transfer-Protocol/issues/13) MCP server.
 
 The product stance from that run: **hybrid**. An LLM can read messy input. The expert's rules decide, cite the path, and escalate what the rules do not cover.
 
