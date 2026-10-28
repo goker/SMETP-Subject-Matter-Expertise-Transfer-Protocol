@@ -7,13 +7,13 @@
 
 *Augment, don't replace.*
 
-> **In-repo copy (October 2026).** Headline numbers were cross-checked against the proof notes dated 2026-10-15. Decision accuracy, decision+tier, overreach, adversarial accuracy, citation rate, median latency, per-setup cost, total spend ($4.67), and plain-LLM consistency (59.8%, 58 of 97) match. The proof table prints graph latency as `0.008 ms`; this write-up keeps `~0.008 ms`. Token counts appear in this write-up only. The proof notes end with a line that LLM baselines had not been run; that line disagrees with the scored-run table in the same notes and with this report. Headline numbers below are the scored run.
+> **In-repo copy (October 2026).** Headline numbers are the scored run in [`benchmarks/2026-10-credit-risk/results.json`](../../benchmarks/2026-10-credit-risk/results.json), frozen 2026-10-15 and published with SHA-256 hashes on 2026-10-28. Decision accuracy, decision+tier, overreach, adversarial accuracy, citation rate, median latency, tokens per call, per-setup cost, total spend ($4.67), and plain-LLM consistency (59.8%, 58 of 97) match that file. `results.json` gives graph latency as 0.008 ms; this write-up keeps `~0.008 ms`. The local proof notes from that day contained stale lines (LLM baselines "haven't been run", "5 times per case", LLM side "ready to run once a key is set"). They predate the scored run and are not repeated here.
 >
 > Chart PNGs from the working folder are not in this repository.
 >
 > This file does not claim npm packages or drop-in model adapters. Those are roadmap items, and they are not in the public repo.
 
-**See also:** [Methods companion](./2026-10-credit-risk-methods.md) (construct, metrics, application, claims). [Methodology review](./methodology-review.md) (in progress; method and application only).
+**See also:** [Methods companion](./2026-10-credit-risk-methods.md) (construct, metrics, application, claims). [Frozen harness](../../benchmarks/2026-10-credit-risk/README.md) (runs offline from a clone for the graph). [Methodology review](./methodology-review.md) (three LLM judges; majority verdict **partially**).
 
 ---
 
@@ -25,13 +25,13 @@ We took the credit-risk skill published in the SMETP repo, compiled its decision
 
 Five findings:
 
-1. **An LLM without the expert's rules gets 30.2% of decisions right.** It is mostly cautious, not reckless: it escalates most cases it can't ground in a policy.
-2. **Giving the LLM the expert's documents gets it to 97.1%**, but it costs the most ($2.29 for 139 decisions), is the slowest (16.8 s median), and cites a valid rule 90.6% of the time.
-3. **The hybrid (LLM reads the input, KG makes the decision) matches that 97.1% at about a sixth of the cost ($0.36) and 2.5 s median latency, with a rule citation on 100% of decisions.** Its four misses share one fixable cause (Section 6.3).
-4. **The KG alone scores 100%, but by construction.** The ground truth comes from the same rules. That number shows the graph captured the expert's tree faithfully. It does not show the graph is smarter than an LLM.
+1. **A no-policy control (an LLM without the expert's rules) gets 30.2% of decisions right.** It is a control, not a competitor: it never saw the policy the answers come from. It mostly escalates cases it can't ground in a policy.
+2. **Giving the LLM the expert's documents gets it to 97.1%** on this set. It costs the most ($2.29 for 139 decisions), is the slowest (16.8 s median), and names a decision-tree node 90.6% of the time.
+3. **The hybrid (LLM reads the input, KG makes the decision) also reached 97.1% on this set, at $0.36 and a 2.5 s median.** Every hybrid decision carries a reasoner path. One run per case, so the two 97.1% figures are the same score on one sample, not a demonstrated equivalence. The hybrid's four misses share one cause (Section 6.4).
+4. **The KG alone scores 100%, by construction.** The labels come from an oracle that encodes the same expert tree. That number shows the graph captured the tree faithfully. It does not show the graph is smarter than an LLM.
 5. **Encoding the expertise found bugs in the expert's own published example**: 2 of its 5 test cases contradict its decision tree, there is a bankruptcy check that never runs at credit scores of 650+, two fields are missing from the schema, and some reason text doesn't match the logic.
 
-The defensible pitch is not "a KG beats an LLM". It is: **formalizing expert judgment makes it testable, traceable and cheap to run, and the hybrid gives you auditable decisions without giving up the LLM's ability to read messy input.**
+The defensible pitch is not "a KG beats an LLM". It is: **formalizing expert judgment makes it testable and traceable, and on this synthetic set the hybrid kept the policy-in-prompt accuracy while every decision carried a rule path.** Whether the hybrid holds up on messy real input is a hypothesis (Section 6.5).
 
 ---
 
@@ -59,7 +59,7 @@ The example file also contains a `validation` block and a `benchmarking` block f
 
 Example trace: `root → check_standard_tier → check_dti → check_employment → check_inquiries → approve_standard`.
 
-`kg.py` is not in this public repository yet. See Section 9 and Section 10.
+`kg.py` is published in [`benchmarks/2026-10-credit-risk/`](../../benchmarks/2026-10-credit-risk/README.md). See Section 10.
 
 ### 2.3 Test set (`gen_cases.py`, `cases.json`)
 
@@ -73,26 +73,32 @@ Example trace: `root → check_standard_tier → check_dti → check_employment 
 | Out of scope | 24 | Missing, invalid or out-of-range inputs that must escalate |
 | Adversarial | 16 | Prompt injection in a notes field, numbers sent as strings, social pressure, one point under a cutoff, a heuristic the tree doesn't cover (8 scenarios, each appearing twice) |
 
-Expected decisions: 42 APPROVE, 30 CONDITIONAL, 36 DENY, 31 ESCALATE. Ground truth comes from a **separate hand-written oracle**, not from the graph walker, so the KG is checked against an independent reading of the same tree.
+Expected decisions: 42 APPROVE, 30 CONDITIONAL, 36 DENY, 31 ESCALATE.
+
+**Oracle: implementation-independent, policy-shared.** Ground truth comes from `gen_cases.oracle`, a separate hand-written function that never calls the graph walker. So the KG is not scoring itself. But the oracle and the graph encode the same expert tree and were written by the same authors. That leaves policy-level circularity: if both misread the tree the same way, the benchmark would not catch it. There is no second-author oracle, divergence log, or path-coverage report yet.
+
+Small slices: the adversarial set is 16 cases (8 scenarios, each twice) and doc conflict is 3 cases. Treat per-slice differences as weak evidence.
 
 ### 2.4 Systems compared (`bench.py`)
 
 | System | How it decides |
 |---|---|
-| **Plain LLM** | "You are a senior credit analyst" plus the application JSON. No policy. |
+| **Plain LLM (no-policy control)** | "You are a senior credit analyst" plus the application JSON. No policy. |
 | **LLM + expert docs** | The expert's inputs, decision tree, heuristics and edge cases pasted into the prompt (RAG-style), plus the application. Must cite a decision-tree node. |
 | **KG only** | The deterministic reasoner over the SMETP graph. No model call. |
 | **Hybrid** | The LLM turns the application (rendered as free-text notes) into structured fields, told to omit anything not stated and never guess. The KG makes the decision. |
 
-All LLM systems ask for JSON with a decision, tier, confidence and the rule cited, and are told to ESCALATE when information is missing, invalid or out of scope.
+All LLM systems ask for JSON with a decision, tier, confidence and the rule cited, and are told to ESCALATE when information is missing, invalid or out of scope. The prompts are the `p_plain`, `p_rag` and `p_parse` functions in the published `bench.py`.
+
+The plain LLM is a **no-policy control**. It shows what the model does without the expert's rules. It is not a fair competitor to setups that get those rules.
 
 ### 2.5 Metrics
 
 - **Decision accuracy**: decision matches the expected decision. **Decision + tier**: tier matches too.
-- **Overreach**: share of the 31 must-escalate cases where the system made a decision instead of escalating. Lower is better.
+- **Overreach**: one denominator, the 31 must-escalate cases (24 out-of-scope, 4 adversarial, 2 in-distribution, 1 boundary). Overreach is the share where the system made a decision instead of escalating. Lower is better. It is one-sided: escalating a case that had a definite answer is not counted here.
 - **Adversarial accuracy**: accuracy on the 16 adversarial cases.
-- **Citation rate**: Plain LLM, any rule named. LLM + docs, a valid node name from the tree. KG and hybrid, the reasoner's path.
-- **Consistency**: same decision and tier across repeated runs.
+- **Citation rate measures presence, not correctness.** Plain LLM: any rule named. LLM + docs: some valid node name from the tree, not checked against the right path. KG: the reasoner returned a path. Hybrid: the harness records every run as cited, because the KG always returns a path. No citation-correctness check exists in the scored run.
+- **Consistency**: same decision and tier across repeated runs. `results.json` has a `consistency_1runs` field that reads 1.0 for every arm. With one run that is trivially true, and it is not a consistency measurement.
 - **Latency** (median per decision), **tokens per call**, and **cost** (xAI-billed `cost_in_usd_ticks`).
 
 ---
@@ -111,12 +117,17 @@ All LLM systems ask for JSON with a decision, tier, confidence and the rule cite
 
 | System | Decision acc. | Decision + tier | Overreach (31 must-escalate) | Adversarial (16) | Citation | Median latency | Tokens / call | Cost, 139 decisions |
 |---|---|---|---|---|---|---|---|---|
-| KG only (SMETP graph) | **100%** | 100% | **0%** | **100%** | **100%** | ~0.008 ms | 0 | $0 |
-| Plain LLM | 30.2% | 28.8% | 6.5% | 31.3% | 3.6% | 8.7 s | 2,266 | $0.87 |
-| LLM + expert docs | 97.1% | 97.1% | 12.9% | 87.5% | 90.6% | 16.8 s | 6,029 | $2.29 |
-| **Hybrid (LLM parses, KG decides)** | **97.1%** | 97.1% | 12.9% | 75.0% | **100%** | **2.5 s** | 1,644 | **$0.36** |
+| KG only (SMETP graph) | 100%\* | 100%\* | 0%\* | 100%\* | 100%† | ~0.008 ms | 0 | $0 |
+| Plain LLM (no-policy control) | 30.2% | 28.8% | 6.5% | 31.3% | 3.6%† | 8.7 s | 2,266 | $0.87 |
+| LLM + expert docs | 97.1% | 97.1% | 12.9% | 87.5% | 90.6%† | 16.8 s | 6,029 | $2.29 |
+| **Hybrid (LLM parses, KG decides)** | **97.1%** | 97.1% | 12.9% | 75.0% | 100%† | **2.5 s** | 1,644 | **$0.36** |
 
-**Consistency:** the KG is deterministic. The plain LLM gave the same answer on all 3 runs in only **58 of 97 cases (59.8%)**. Consistency for LLM + docs and the hybrid was not measured.
+\*By construction. The oracle encodes the same expert tree as the graph, so these cells measure faithful capture of the tree, not decision quality versus an LLM.
+†Citation is presence, not correctness (Section 2.5). The hybrid's 100% is recorded by the harness because the KG always returns a path.
+
+One scored run per case for every LLM row. The adversarial column is 16 cases: 87.5% vs 75.0% is 14 vs 12 cases and is not statistically decisive.
+
+**Consistency:** the KG is deterministic. The plain LLM gave the same answer on all 3 runs in only **58 of 97 cases (59.8%)**, from cached earlier runs. Consistency for LLM + docs and the hybrid was not measured.
 
 Chart images (`quality_metrics`, `cost_latency`, `per_category`) are not included in this repository copy.
 
@@ -124,50 +135,66 @@ Chart images (`quality_metrics`, `cost_latency`, `per_category`) are not include
 
 ## 5. Read the KG's 100% correctly
 
-The ground truth was produced from the same rules the KG encodes, so the KG wins on these cases **by construction**. Its 100% is a fidelity check: the graph agrees with an independent oracle on every case, so the expert's tree was captured faithfully. It is **not** evidence that a KG is more intelligent than an LLM.
+The ground truth was produced from the same expert tree the KG encodes, so the KG wins on these cases **by construction**. Its 100% is a fidelity check: the graph agrees on every case with a separately written oracle of the same tree, so the tree was captured faithfully. The oracle is implementation-independent but policy-shared (Section 2.3). It is **not** evidence that a KG is more intelligent than an LLM.
 
-What the KG does show, and what an auditor cares about:
+What the KG run does show:
 
-1. **Traceability.** Every decision carries the exact path through the rules. That is the kind of record FCRA and ECOA reviews ask for.
-2. **Consistency.** Same input, same output, every time.
-3. **Calibrated escalation.** Missing, invalid or uncovered input becomes ESCALATE with a stated reason instead of a confident guess. Instructions planted in a notes field have no effect, because the reasoner never reads free text.
-4. **Near-zero marginal cost and latency.**
+1. **Traceable paths.** Every decision carries the exact path through the rules. This PoC shows traceable decision paths. It is not regulatory validation, and it does not show that any lending-compliance requirement is met.
+2. **Determinism.** Same input, same output, every time.
+3. **Escalation on this set.** 0% overreach on the 31 must-escalate cases: missing, invalid or out-of-range input became ESCALATE with a stated reason. No calibration metric was measured. Instructions planted in a notes field had no effect, because the reasoner never reads free text.
+4. **No model call at decision time.** ~0.008 ms median and $0 billed in this run.
 
 ---
 
 ## 6. Findings
 
-### 6.1 Without the rules, the LLM doesn't guess. It escalates.
+### 6.1 The no-policy control mostly escalates.
 
-The plain LLM's low accuracy is mostly caution, not recklessness. In the cached responses, it answered ESCALATE on 88 of the 108 cases that had a definite answer. That is also why its overreach looks good (6.5%): escalating nearly everything means it rarely decides when it shouldn't. A policy-free LLM is safe-ish and almost useless. The expert's knowledge is what makes it useful.
+The plain LLM is a control: it shows what the model does without the expert's rules. Its low accuracy is mostly caution, not recklessness. In the cached responses, it answered ESCALATE on 88 of the 108 cases that had a definite answer. That is also why its overreach looks good (6.5%): escalating nearly everything means it rarely decides when it shouldn't. Without the policy, the model is cautious and rarely useful on this set. The expert's rules are what make it useful.
 
 The plain-LLM answer chart is not included in this repository copy.
 
-### 6.2 Expert docs fix accuracy but cost the most.
+### 6.2 Expert docs lift accuracy, at the highest cost.
 
-Pasting the skill file into the prompt lifts accuracy from 30.2% to 97.1%. The price is about 6,000 tokens per call, a 16.8 s median and $2.29 for 139 decisions. Citations are good (90.6%) but not guaranteed, because the model writes them. Its 4 misses: two zero-income applications it denied instead of escalating, and two where `self_employed` arrived as the string "yes" and it approved.
+Pasting the skill file into the prompt lifts accuracy from 30.2% to 97.1%. The price is about 6,000 tokens per call, a 16.8 s median and $2.29 for 139 decisions. It named a valid tree node 90.6% of the time. Whether that node was the right one was not checked. Its 4 misses are in Section 6.4.
 
-### 6.3 The hybrid keeps the accuracy, cuts cost to about a sixth, and always cites.
+### 6.3 The hybrid reached the same accuracy on this set at lower cost, with a path on every decision.
 
 *As tested, the application was rendered as free-text notes for the parser. Emails and PDFs are the intended use, not something this benchmark measured.*
 
-The hybrid matches LLM + docs on decision accuracy (97.1%) at **$0.36 vs. $2.29** (about 16%), **2.5 s vs. 16.8 s** median latency, and **1,644 vs. 6,029** tokens per call. Every decision has a rule path, because the KG makes it.
+On this set, the hybrid and LLM + docs both scored 97.1% decision accuracy in one run per case. The hybrid did it at **$0.36 vs. $2.29** (about 16%), **2.5 s vs. 16.8 s** median latency, and **1,644 vs. 6,029** tokens per call. Every hybrid decision has a reasoner path, because the KG makes it. The same score on one sample of 139 is not evidence that the two setups are equivalent in general, and their misses are on different cases (Section 6.4).
 
-All four hybrid misses (and all four of its overreach cases) have the same cause. The adversarial set sends `credit_score` as the string "800" and `self_employed` as the string "yes". The ground truth says escalate on the bad type. The LLM parser helpfully normalized them to a number and a boolean, so the KG never saw the bad type and approved. That is a design fix, not a capability limit: **validate raw input types before the parser runs**, or have the parser report type mismatches instead of fixing them. Re-running after that fix is the first item on the benchmark roadmap.
+### 6.4 Why the two 97.1% setups missed
 
-### 6.4 Where LLMs still win
+Both setups missed 4 of 139 cases. Every miss is a must-escalate case, which is why both show 12.9% overreach (4 of 31). The per-case outputs come from the scored run's response cache, which is not published. The case ids below come from matching that write-up to the published [`cases.json`](../../benchmarks/2026-10-credit-risk/cases.json). They are consistent with the totals in `results.json`.
 
-- **Messy input** (emails, PDFs, call notes). The KG needs structured fields.
+| Case ids | Input | Label | Hybrid | LLM + docs |
+|---|---|---|---|---|
+| 125, 133 (adversarial) | `credit_score` sent as the string `"800"` | ESCALATE (bad type) | approved (miss) | escalated (correct) |
+| 130, 138 (adversarial) | `self_employed` sent as the string `"yes"` | ESCALATE (bad type) | approved (miss) | approved (miss) |
+| 102, 111 (out of scope) | `income_annual` = 0 | ESCALATE (DTI undefined) | escalated (correct) | denied (miss) |
+
+**Hybrid: type normalization.** All four hybrid misses, all four of its overreach cases, and all four of its adversarial misses (75.0%, 12 of 16) are the bad-type cases. The LLM parser helpfully turned `"800"` into a number and `"yes"` into a boolean. The KG never saw the bad type, so its schema guard never fired, and the tree approved. The decision logic worked as written. The failure is at the input boundary.
+
+**LLM + docs: the same theme plus one label question.** It also approved on `self_employed: "yes"` (both of its adversarial misses, 87.5%, 14 of 16). Its other two misses denied zero-income applications instead of escalating. The skill's schema allows `income_annual` minimum 0, and on the tree as written a zero income makes debt-to-income unbounded, which leads to a DTI denial. The "escalate at zero income" rule comes from the harness: the oracle and `kg.py` both add it. Those two misses are partly a harness labeling choice, not only a model error.
+
+**Design fix, not yet measured.** Validate raw input types before the parser runs, or have the parser report type mismatches instead of fixing them. That is [issue #10](https://github.com/goker/SMETP-Subject-Matter-Expertise-Transfer-Protocol/issues/10). We expect it to remove the hybrid's four misses. That expectation has not been re-measured, and no new scores are reported here.
+
+### 6.5 Hypotheses: where LLMs may still help (not measured)
+
+These come from the design of the system. This benchmark did not test them.
+
+- **Messy input** (emails, PDFs, call notes). The KG needs structured fields. The hybrid's parser saw tidy renderings of structured fields, not real documents.
 - **Coverage beyond the rules.** New situations, and the soft heuristics (income trajectory, medical debt, divorce) that the tree never encoded.
 - **Explaining a decision** to a customer in plain language.
 
-So the realistic product is the hybrid: the LLM reads, the KG decides with a citation, and anything unknown goes to a human.
+The product stance is still the hybrid: the LLM reads, the KG decides with a rule path, and anything the rules don't cover goes to a human. The first item is a hypothesis to test, not a finding.
 
 ---
 
 ## 7. Encoding the expertise found bugs in the expert's own example
 
-The single most useful outcome. Turning prose into a graph forced every rule to be explicit, and the validator (`kg_validation.txt`) flagged problems that a prompt-stuffing approach would quietly paper over:
+The single most useful outcome. Turning prose into a graph forced every rule to be explicit, and the validator ([`kg_validation.txt`](../../benchmarks/2026-10-credit-risk/kg_validation.txt)) flagged problems that pasting the prose into a prompt does not surface on its own:
 
 1. **2 of the 5 published test cases contradict the decision tree.**
    - "Recent bankruptcy (8 years) with recovery", score 700: the doc expects CONDITIONAL / SUBPRIME. The tree gives APPROVE / STANDARD.
@@ -188,15 +215,19 @@ These items are tracked as GitHub issues labeled `example-bug`. The finance JSON
 
 ## 8. Limitations
 
-- **The KG's 100% is by construction.** Ground truth comes from the same rules. It shows faithful capture, not superior intelligence.
+- **The KG's 100% is by construction.** Ground truth comes from an oracle of the same expert tree. It shows faithful capture, not superior intelligence.
+- **Policy-shared oracle.** The oracle is a separate implementation, but it encodes the same tree and was written by the same authors. No second-author oracle, divergence log or path coverage.
 - **Synthetic data, one domain.** 139 generated credit-risk cases. No real historical decisions by a real expert. The example expert is fictional.
-- **One run per case** for every LLM system. Small differences between systems (for example, 87.5% vs. 75% adversarial accuracy, which is 14 vs. 12 cases) are within noise. Consistency was measured only for the plain LLM, on 97 cases.
-- **Small adversarial set.** 16 cases, made of 8 scenarios that each appear twice.
+- **One run per case** for every LLM system. Small differences between systems (for example, 87.5% vs. 75% adversarial accuracy, which is 14 vs. 12 cases) are not statistically decisive. No confidence intervals are reported. Consistency was measured only for the plain LLM, on 97 cases, from cached earlier runs.
+- **Small slices.** The adversarial set is 16 cases, made of 8 scenarios that each appear twice. With the response cache on, the two copies of a scenario can share one LLM response. Doc conflict is 3 cases.
+- **Citation is presence, not correctness.** No check that a cited node is the right one.
+- **One-sided escalation metric.** Overreach counts missed escalations on the 31 must-escalate cases. Unneeded escalations on decidable cases show up only as accuracy loss.
+- **Not regulatory validation.** Traceable paths are not a lending-compliance assessment or a model-risk validation.
 - **The tree is treated as authoritative** where the docs disagree. Some "correct" answers are faithful to a flawed tree (for example, approving the 655-score applicant with a recent bankruptcy), so adversarial accuracy partly measures fidelity to the tree, gaps included.
 - **One model.** Only grok-4.7 at temperature 0.7. Other models and settings may differ.
 - **Lightweight KG.** Plain Python triples plus a tree walker, not full OWL/RDF reasoning. Heuristics and edge cases aren't encoded.
 - **Not a production system.** No privacy, consent or PII handling was tested.
-- **The harness isn't public yet.** `kg.py`, `gen_cases.py`, `bench.py` and `cases.json` are not in the public repo today.
+- **Partial reproducibility.** The harness, cases, prompts and scored results are published. The graph results reproduce offline. The xAI response cache is not published, so the plain-LLM consistency figure and per-case LLM outputs cannot be checked from the repo, and a new LLM run is a new measurement.
 
 ---
 
@@ -207,36 +238,41 @@ From the October 15, 2026 evaluation of the public repo, in priority order:
 1. **Publish the code.** Push the reference packages (spec, runtime, CLI, SDK) to the repo and npm, or remove package claims from the site until they exist. This is the biggest credibility risk today. **Status when this report was added to the public repo:** those packages are not on npm, this repo has no `packages/` tree, and the README says so. The notes in `docs/reference-implementation/` are a handoff plan, not a release.
 2. **Write a normative spec plus a JSON Schema** for the skill file (frontmatter, decision nodes, citations, confidence, validation block), with a conformance test suite and a `smetp validate` command. The validator in this benchmark is a starting point. Not shipped.
 3. **Compile to an Agent Skills `SKILL.md` and ship one real MCP server** wrapping a reasoner. A hand-written credit-risk draft is at `examples/credit-risk/SKILL.md`, labeled example-only. It is not a drop-in adapter for any host. An MCP server with `decide` / `explain` / `validate` is not shipped. Host-specific exporters are not shipped.
-4. **Replace marketing accuracy numbers with this reproducible benchmark.** This file is that write-up. The synthetic dataset and the scripted eval are not public yet. Publish `benchmarks/` (`kg.py`, `gen_cases.py`, `bench.py`, `cases.json`). Healthcare and legal benchmarks are not done.
+4. **Replace marketing accuracy numbers with this reproducible benchmark.** This file is that write-up. **Status:** the harness, the synthetic dataset and the scored results are published in [`benchmarks/2026-10-credit-risk/`](../../benchmarks/2026-10-credit-risk/README.md) with SHA-256 hashes ([issue #11](https://github.com/goker/SMETP-Subject-Matter-Expertise-Transfer-Protocol/issues/11)). Healthcare and legal benchmarks are not done.
 5. **Add a privacy and consent model.** Expert consent capture, retention and deletion of audio, PII/PHI redaction before extraction, a local or bring-your-own-key mode, and a SECURITY.md.
 
-Benchmark-specific next steps: fix the hybrid's raw-type guard and re-run, run 5 times per case to measure consistency for every system, fix the issues in Section 7 and re-validate, encode the heuristics and edge cases, and add the healthcare and legal examples as second and third domains.
+Benchmark-specific next steps (none of these have been run): fix the hybrid's raw-type guard ([#10](https://github.com/goker/SMETP-Subject-Matter-Expertise-Transfer-Protocol/issues/10)) and re-run; re-run every LLM setup at 5 runs per case on the same model to measure consistency for all of them; add confidence intervals; fix the issues in Section 7 and re-validate; encode the heuristics and edge cases; and add the healthcare and legal examples as second and third domains.
 
 ---
 
 ## 10. How to reproduce
 
-The harness is **not in this repository**. The files lived in a local proof folder when this report was written (`kg.py`, `gen_cases.py`, `bench.py`, `cases.json`, next to a clone of the repo). Publishing them is a roadmap item. The commands below describe that working folder. They will not run from a fresh clone of this repo today.
+The frozen harness is in [`benchmarks/2026-10-credit-risk/`](../../benchmarks/2026-10-credit-risk/README.md): `kg.py`, `gen_cases.py`, `bench.py`, `cons.py`, `cases.json`, `results.json` and `kg_validation.txt`, byte-identical to the 2026-10-15 proof folder, with SHA-256 hashes. Its README has the full instructions. Python standard library only.
 
 ```bash
-git clone https://github.com/goker/SMETP-Subject-Matter-Expertise-Transfer-Protocol repo
-# kg.py, gen_cases.py, bench.py sit next to repo/  (not published yet)
+git clone https://github.com/goker/SMETP-Subject-Matter-Expertise-Transfer-Protocol
+cd SMETP-Subject-Matter-Expertise-Transfer-Protocol
+(cd benchmarks/2026-10-credit-risk && sha256sum -c SHA256SUMS)
 
-python3 kg.py          # builds the graph, prints 116 triples, validator issues and the 5 published test cases
-python3 gen_cases.py   # regenerates cases.json (seed 42)
+# bench.py and gen_cases.py write into the current folder, so use a scratch copy
+cp -rL benchmarks/2026-10-credit-risk /tmp/smetp-bench && cd /tmp/smetp-bench
 
-# KG only, no API key needed:
-RUNS=1 python3 bench.py
+python3 kg.py | diff - kg_validation.txt   # 116 triples, validator issues, the 5 published test cases
+python3 gen_cases.py                       # regenerates cases.json (seed 42), same hash
 
-# All four systems (xAI). bench.py defaults to grok-3-mini, so set the model:
+# KG only, no API key, nothing billed:
+env -u OPENAI_API_KEY -u XAI_API_KEY -u ANTHROPIC_API_KEY RUNS=1 python3 bench.py
+
+# LLM setups (billed). bench.py's default model ids are older, so set the model:
 export XAI_API_KEY=...
-LLM_MODEL=grok-4.7 RUNS=1 python3 bench.py   # writes results.json
+LLM_MODEL=grok-4.7 RUNS=1 python3 bench.py
 ```
 
-Notes from the working folder:
+Notes:
 
-- `bench.py` also accepts `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` (with `LLM_MODEL`) for other models.
-- Responses are cached in `llm_cache.jsonl`. Delete it for a fresh run. Set `RUNS=5` to measure consistency (roughly 5x the cost).
+- From a fresh clone, the graph steps reproduce `kg_validation.txt`, `cases.json` and the KG row of `results.json` exactly, except median latency, which depends on the machine.
+- `bench.py` also accepts `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` (with `LLM_MODEL`) for other models. A run on another model is a new study, not a reproduction.
+- The xAI response cache (`llm_cache.jsonl`) is **not** published. A new LLM run makes new calls and is a new measurement. Set `RUNS=5` to measure consistency (roughly 5x the cost).
 - Cost is read from xAI's billed `cost_in_usd_ticks`. Other providers need `PRICE_IN_PER_M` and `PRICE_OUT_PER_M`.
 - Per-category figures and the plain-LLM answer breakdown in this report were re-derived from the response cache. For the plain LLM the cache gives 44/139 correct versus 42/139 in the scored run, because duplicated adversarial prompts share one cache entry. Headline numbers come from the scored run (`results.json`).
 
