@@ -12,6 +12,7 @@
 | [benchmarks/2026-10-credit-risk-methods.md](./benchmarks/2026-10-credit-risk-methods.md) | Methods companion: construct, metrics, application, miss analysis, claims |
 | [../benchmarks/2026-10-credit-risk/](../benchmarks/2026-10-credit-risk/README.md) | Frozen harness, cases and scored results with SHA-256 hashes (graph runs offline) |
 | [benchmarks/methodology-review.md](./benchmarks/methodology-review.md) | Three-LLM methodology review: majority "partially" (method and application only; not a re-run) |
+| [presentations/](./presentations/README.md) | October 2026 pitch deck (PDF public copy) and what the repo has updated since |
 | [benchmarks/discussions-draft.md](./benchmarks/discussions-draft.md) | Discussion posts to paste once Discussions are enabled |
 
 ## Reference implementation — operations

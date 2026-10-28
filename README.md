@@ -13,7 +13,7 @@ An open, MIT-licensed method for interviewing a subject-matter expert and writin
 [![Stance: hybrid](https://img.shields.io/badge/stance-hybrid%3A%20LLM%20reads%2C%20graph%20decides-F0B43C)](#how-it-works)
 [![Methodology review: majority partially](https://img.shields.io/badge/methodology%20review-majority%20%22partially%22-6B5A4E)](docs/benchmarks/methodology-review.md)
 
-[**ieataiforbreakfast.com**](https://ieataiforbreakfast.com) · [Pitch deck (Google Slides)](https://docs.google.com/presentation/d/1f7bCEAktVLKlUVZo5MYdazvQvN-8L3me0Zp4V01mn_Q/edit) · [Benchmark report](docs/benchmarks/2026-10-credit-risk.md) · [Get started](GETTING_STARTED.md)
+[**ieataiforbreakfast.com**](https://ieataiforbreakfast.com) · [Pitch deck (PDF)](docs/presentations/smetp-campaign.pdf) · [Benchmark report](docs/benchmarks/2026-10-credit-risk.md) · [Get started](GETTING_STARTED.md)
 
 *Augment experts, don't replace them.*
 
@@ -61,7 +61,7 @@ Methodology review: three LLM judges, majority verdict **"partially"**. One judg
 - **Capture an expert by hand.** Follow [`GETTING_STARTED.md`](GETTING_STARTED.md) with the interview [templates](templates/).
 - **Re-run the benchmark graph offline.** Frozen harness with SHA-256 hashes, standard-library Python, no API key: [`benchmarks/2026-10-credit-risk/`](benchmarks/2026-10-credit-risk/README.md).
 - **Check how it was measured.** [Methods](docs/benchmarks/2026-10-credit-risk-methods.md) · [Methodology review](docs/benchmarks/methodology-review.md) · [Full report](docs/benchmarks/2026-10-credit-risk.md)
-- **See the pitch.** [Pitch deck (Google Slides)](https://docs.google.com/presentation/d/1f7bCEAktVLKlUVZo5MYdazvQvN-8L3me0Zp4V01mn_Q/edit)
+- **See the pitch.** [Pitch deck (PDF, public copy)](docs/presentations/smetp-campaign.pdf) · [Pitch deck (Google Slides)](https://docs.google.com/presentation/d/1f7bCEAktVLKlUVZo5MYdazvQvN-8L3me0Zp4V01mn_Q/edit) (may ask you to sign in until sharing is opened) · [What changed since the deck](docs/presentations/README.md)
 - **Visit the site.** [ieataiforbreakfast.com](https://ieataiforbreakfast.com) · [Discovery (free)](https://ieataiforbreakfast.com/discover)
 - **Free demo — coming on ieataiforbreakfast.com.** Not live yet.
 - **Tell us what to capture next.** Open an Issue with the domain-request template.
