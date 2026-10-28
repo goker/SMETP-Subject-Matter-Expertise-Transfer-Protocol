@@ -30,6 +30,7 @@ On 139 synthetic credit-risk cases built from [`examples/finance_credit_risk_ass
 \*By construction — the test answers come from the same rules. It shows faithful capture, not a smarter system.
 Caveats: synthetic data, one domain, one model, one run per case. Total spend: $4.67.
 Full report: [October 2026 credit-risk benchmark](docs/benchmarks/2026-10-credit-risk.md)
+Methods: [how the run was designed and applied](docs/benchmarks/2026-10-credit-risk-methods.md). Methodology review: [in progress](docs/benchmarks/methodology-review.md).
 
 Encoding the example as a graph also found bugs in it (2 of 5 published test cases contradict
 the tree; a bankruptcy check never runs at scores of 650+; undeclared fields). Tracked here:

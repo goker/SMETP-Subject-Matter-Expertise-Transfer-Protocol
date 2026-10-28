@@ -13,6 +13,8 @@
 >
 > This file does not claim npm packages or drop-in model adapters. Those are roadmap items, and they are not in the public repo.
 
+**See also:** [Methods companion](./2026-10-credit-risk-methods.md) (construct, metrics, application, claims). [Methodology review](./methodology-review.md) (in progress; method and application only).
+
 ---
 
 ## 1. Summary

@@ -9,6 +9,8 @@
 | [CONTRIBUTING.md](../CONTRIBUTING.md) | How to contribute |
 | [IMPROVEMENTS.md](../IMPROVEMENTS.md) | Roadmap notes (older drafts; see the benchmark before quoting a number) |
 | [benchmarks/2026-10-credit-risk.md](./benchmarks/2026-10-credit-risk.md) | October 2026 synthetic credit-risk benchmark (the only published numbers) |
+| [benchmarks/2026-10-credit-risk-methods.md](./benchmarks/2026-10-credit-risk-methods.md) | Methods companion: construct, application, claims |
+| [benchmarks/methodology-review.md](./benchmarks/methodology-review.md) | Methodology review placeholder (in progress; not a re-run) |
 | [benchmarks/discussions-draft.md](./benchmarks/discussions-draft.md) | Discussion posts to paste once Discussions are enabled |
 
 ## Reference implementation — operations
