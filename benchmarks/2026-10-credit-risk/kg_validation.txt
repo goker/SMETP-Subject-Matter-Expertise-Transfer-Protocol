@@ -1,0 +1,17 @@
+116 triples
+ISSUE: check_self_employed_details: tests 'has_2yr_tax_returns', which is not declared in inputs schema
+ISSUE: check_tax_return_growth: tests 'tax_return_trend', which is not declared in inputs schema
+ISSUE: escalate_short_employment: ESCALATE outcome has no confidence value
+ISSUE: deny_recent_bankruptcy: DENY outcome has no confidence value
+ISSUE: deny_high_dti: DENY outcome has no confidence value
+ISSUE: deny_score_too_low: DENY outcome has no confidence value
+ISSUE: deny_credit_seeking: DENY outcome has no confidence value
+ISSUE: deny_no_documentation: DENY outcome has no confidence value
+ISSUE: deny_credit_seeking: reason says '>3 inquiries' but the path reaching it fires at >1
+ISSUE: deny_high_dti: reason says '43%' but it is also reached from check_post_bankruptcy_dti (35% threshold)
+ISSUE: check_recent_bankruptcy only sits under credit_score 600-649; applicants >=650 with a bankruptcy <7y are never checked for it
+OK   Prime applicant - straightforward | tree: APPROVE PRIME | doc expects: APPROVE PRIME
+OK   Standard applicant - borderline | tree: APPROVE STANDARD | doc expects: APPROVE STANDARD
+OK   Subprime with high inquiry velocity | tree: DENY None | doc expects: DENY None
+MISMATCH Recent bankruptcy (8 years) with recovery | tree: APPROVE STANDARD | doc expects: CONDITIONAL SUBPRIME
+MISMATCH Self-employed with growing income | tree: APPROVE STANDARD | doc expects: CONDITIONAL STANDARD
