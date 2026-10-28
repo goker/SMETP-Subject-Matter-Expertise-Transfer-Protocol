@@ -1,7 +1,9 @@
 # 📚 SMETP Project Handoff - Documentation Index
 
+> **Not in this repo (October 2026).** Maintainer handoff for a product monorepo, mirrored here. Commands in this file (`npm install`, `npm run dev`, and the rest) do not apply to a clone of the public protocol repo. There are no published npm packages here, and this file is not a release announcement.
+
 **Project**: Subject Matter Expertise Transfer Protocol (SMETP)
-**Status**: Production Ready ✅
+**Status**: Handoff notes only. Not a statement that this public repo is production-ready.
 **URL**: https://ieataiforbreakfast.com
 **Last Updated**: 2026-04-16
 
@@ -184,14 +186,9 @@ This project includes comprehensive documentation to help you take over with Cur
 
 ## 🎯 Current Status
 
-✅ **Production Ready**
-- Homepage live
-- Extract flow fully functional
-- LLM analysis working with Claude
-- Real-time artifact extraction
-- Professional UI with proper marketing language
-- Security hardening implemented
-- Automatic deployments via Vercel
+The checklist below was written for the product monorepo on 2026-04-16. It was **not** re-verified when these notes were mirrored into the public protocol repo. Do not read it as a claim that npm packages, chat adapters, or a finished capture flow ship from this repository.
+
+The original handoff marked these as done: homepage, extract flow, LLM analysis, real-time artifact extraction, UI, security hardening, Vercel deploys. Treat that list as unverified notes from the other repo.
 
 ❌ **Not Yet Implemented**
 - Database persistence (optional for MVP)

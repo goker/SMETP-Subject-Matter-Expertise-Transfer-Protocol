@@ -1,8 +1,10 @@
 # Deployment & CI/CD Pipeline Guide
 
+> **Not in this repo (October 2026).** Deployment notes for a product monorepo. They are not instructions for this public protocol repository, and they are not evidence of published npm packages or chat adapters.
+
 **Last Updated**: 2026-04-16
 **Platform**: Vercel (automatic CI/CD)
-**Status**: Production Ready ✅
+**Status**: Handoff notes only. Not a release of this repo.
 
 ---
 

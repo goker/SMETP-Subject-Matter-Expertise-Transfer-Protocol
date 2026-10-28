@@ -1,5 +1,7 @@
 # Environment variables and where to get them
 
+> **Not in this repo (October 2026).** This list belongs to a product monorepo that is not this repository. `@smetp/cli` is not published. Do not run `npx` against that name from these notes.
+
 This guide lists every secret and config value the app and SMETP tooling expect, with **official places to copy values** (no third-party scrapers). Open each link in your browser while signed into the right account.
 
 ## Required for local LLM routes
@@ -37,7 +39,7 @@ This guide lists every secret and config value the app and SMETP tooling expect,
 
 ## SMETP CLI only
 
-For `npx @smetp/cli` you only need a provider key (e.g. `ANTHROPIC_API_KEY`) in the environment; no database is required unless you add a custom persistence adapter.
+`npx @smetp/cli` is **not** a published command. The sentence that used to live here assumed a package that is not on npm. Skip it.
 
 ## npm publishing (maintainers)
 

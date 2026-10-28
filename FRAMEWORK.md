@@ -113,7 +113,7 @@ SMETP captures that expertise **before it's lost**.
    - **Recall**: Of actual approvals, % caught
    - **Confidence Calibration**: Does 95% confidence = 95% accuracy?
 
-**Target**: 90%+ accuracy, well-calibrated confidence
+**Target**: agreement with the expert's own cases, and a written list of misses. Do not publish an accuracy percentage from this phase unless a benchmark write-up states the method. The only published measurement is [`docs/benchmarks/2026-10-credit-risk.md`](docs/benchmarks/2026-10-credit-risk.md).
 
 **Output**: Validation report
 
@@ -121,23 +121,16 @@ SMETP captures that expertise **before it's lost**.
 
 ### Phase 5: Deploy 🚀
 
-**Goal**: Use skill in production
+**Goal**: Run the written rules on new cases, with a path a person can audit.
 
-**Export Formats**:
-- Claude Tools (use_tools schema)
-- OpenAI Functions
-- Anthropic Tool Use
-- TypeScript executable
-- Python executable
-- JSON (any LLM)
+**What this repo ships today**: the written skill (JSON). You run it by hand or in code you write. Hybrid use means a model may parse messy input, then the rules decide.
 
-**Deployment Options**:
-- Use in your org only (free)
-- Sell in marketplace (70/30 split)
-- License to enterprises
-- Open-source contribution
+**Not shipped**:
+- Drop-in adapters for Claude, ChatGPT, Gemini, or MCP
+- npm packages
+- A marketplace or a revenue split
 
-**Output**: Deployed skill, ready to scale
+**Output**: a skill document people can validate. A runner, a compiler, and an MCP server are roadmap items. See the README.
 
 ---
 
@@ -344,11 +337,11 @@ Any final thoughts?"
   },
 
   "validation": {
-    "methodology": "Tested against 500+ historical decisions",
-    "accuracy": 0.94,
-    "precision": 0.91,
-    "recall": 0.89,
-    "smeAlignment": "94% agreement with SME",
+    "methodology": "Describe the cases and the method. Do not paste an accuracy figure that was not measured.",
+    "accuracy": null,
+    "precision": null,
+    "recall": null,
+    "smeAlignment": null,
     "test_cases": [
       {
         "name": "Prime applicant",

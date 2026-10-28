@@ -1,5 +1,7 @@
 # Publishing `@smetp/*` to npm
 
+> **Not published (October 2026).** Nothing in this public repo is on npm. There is no `packages/` tree here. This page is a handoff plan, not a release. Do not tell anyone these packages exist until a publish is verified on the registry.
+
 ## 1. Create the npm scope (once)
 
 1. Sign in at [npmjs.com](https://www.npmjs.com/).

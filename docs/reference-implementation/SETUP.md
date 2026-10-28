@@ -1,8 +1,10 @@
 # 🚀 Setup Guide - Build Your AI Skill System
 
+> **Not in this repo (October 2026).** Setup notes for a product monorepo. A clone of the public protocol repo cannot run these steps. No npm packages from this repo are published.
+
 ## Quick Start
 
-Your AI skill building system is now deployed to production at: **https://ieataiforbreakfast.com**
+These steps were written for the hosted app's own repository, not for the public SMETP method repo.
 
 ### Step 1: Configure LLM API (CRITICAL)
 
@@ -244,4 +246,4 @@ npm run dev
 
 ---
 
-**Status:** ✅ Production Ready | Deployed 2026-04-16
+**Status:** Handoff notes dated 2026-04-16. Not a release of this public repo.

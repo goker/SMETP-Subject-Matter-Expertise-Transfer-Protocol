@@ -1,5 +1,7 @@
 # Why is SMETP open source?
 
+> **Not in this repo (October 2026).** This note describes a split between a future open package set and a hosted product. The packages it names are not published, and they are not in this repository. The public repo today is the method, templates, examples, and the October 2026 benchmark write-up.
+
 Short answer: **the methodology has to be open or nobody will adopt it.
 The graph has to be closed or there is no business.**
 

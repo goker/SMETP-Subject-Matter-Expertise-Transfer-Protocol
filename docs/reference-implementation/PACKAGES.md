@@ -1,5 +1,7 @@
 # SMETP packages reference
 
+> **Not in this repo (October 2026).** The packages named below are a plan. They are not published, and this repository does not contain them. No drop-in Claude, ChatGPT, Gemini, or MCP adapter ships from here.
+
 All packages live under `packages/`, are **MIT**, and ship as **ESM** TypeScript compiled to `dist/`.
 
 ## `@smetp/spec`

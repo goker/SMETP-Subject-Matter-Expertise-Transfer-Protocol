@@ -258,69 +258,23 @@ Decision: DENY (or escalate if special circumstances)
 
 ---
 
-## Validation Metrics
+## Validation
 
-### Test Data
-- Collect 100+ past credit decisions
-- Include: approvals, denials, conditionals
-- Include: defaults and good performers
-- Include: edge cases (bankruptcy, self-employed, etc.)
+Collect past credit decisions you are allowed to share: approvals, denials, conditionals, and edge cases (bankruptcy, self-employed). Compare them to [`examples/finance_credit_risk_assessment.json`](../examples/finance_credit_risk_assessment.json).
 
-### Success Criteria
-- **Accuracy**: 90%+ match to SME decisions
-- **Precision**: Of skill approvals, 85%+ should perform well
-- **Recall**: Skill catches 85%+ of SMEs' actual approvals
-- **Confidence Calibration**: 95% confidence decisions succeed 95% of time
+That example is a worked tree, not a measured production system. Two of its five published test cases contradict the tree. Those mismatches, and the other validator findings, are GitHub issues labeled `example-bug`. Do not quote accuracy fields inside the JSON.
 
-### Accuracy Breakdown by Segment
-- Prime applicants (cs >= 750): 98%+ accuracy
-- Standard applicants (650-750): 92%+ accuracy
-- Subprime applicants (<650): 85%+ accuracy
-- Bankruptcy cases: 90%+ accuracy
-- Self-employed: 85%+ accuracy
+The only published credit-risk numbers are the October 2026 synthetic benchmark: [`docs/benchmarks/2026-10-credit-risk.md`](../docs/benchmarks/2026-10-credit-risk.md). Synthetic data, one domain, one model (grok-4.7), one scored run per case. The graph-only result matches by construction. The hybrid (LLM parses, graph decides) is the setup to cite.
 
----
-
-## Competitive Benchmarking
-
-### vs Plain Claude
-| Metric | SMETP | Claude |
-|--------|-------|--------|
-| Accuracy | 94% | 72% |
-| Handles bankruptcy rule | ✓ | ✗ |
-| Handles self-employed | ✓ | ✗ |
-| Deterministic | ✓ | ✗ |
-| Auditable | ✓ | ✗ |
-| Speed | <100ms | 2000ms |
-| Cost | One extraction | Per query |
-
----
-
-## Success Stories
-
-### Case 1: Regional Bank Automation
-- Extracted 5 credit analysts' expertise
-- Combined into single skill
-- Achieved 94% accuracy on 1000 historical decisions
-- Reduced approval time from 3 days to 15 minutes
-- Saved bank $2M/year in analyst costs
-- Maintained compliance (all decisions auditable)
-
-### Case 2: Fintech Scaling
-- Founder (ex-Goldman) automated underwriting
-- Skill deployed to 3 countries
-- 97% accuracy on their specific portfolio
-- Handled local regulations & edge cases
-- Grew from manual 10 approvals/day to 500/day
+There are no customer case studies in this repo.
 
 ---
 
 ## Next Steps
 
-1. Extract your credit analysis expertise
-2. Validate against 50+ historical cases
-3. Test edge case handling
-4. Deploy to your LLM of choice
-5. Monitor and update as you see new patterns
+1. Extract credit-analysis expertise with [`templates/finance_credit_analyst_interview.md`](../templates/finance_credit_analyst_interview.md)
+2. Compare the tree to cases you can share
+3. File tree/test mismatches instead of papering over them
+4. Run it by hand. This repo does not deploy the skill into a chat product.
 
 See [../README.md](../README.md) for platform and [../FRAMEWORK.md](../FRAMEWORK.md) for full methodology.
